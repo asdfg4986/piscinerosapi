@@ -1,0 +1,35 @@
+@PiscinerosAPI_HostAddress = https://localhost:7168
+
+### Obtener todos los clientes
+GET {{PiscinerosAPI_HostAddress}}/api/clientes
+Accept: application/json
+
+### Crear un nuevo cliente
+POST {{PiscinerosAPI_HostAddress}}/api/clientes
+Content-Type: application/json
+
+{
+  "nombre": "Franco",
+  "direccion": "Avenida Siempre Viva 742",
+  "comuna": "San Bernardo",
+  "telefono": "+56912345678",
+  "correo": "franco@example.com",
+  "visitasPorMes": 4,
+  "diaPreferido": "Viernes",
+  "observaciones": "Llamar al llegar a la portería"
+}
+
+### Obtener todos los técnicos
+GET {{PiscinerosAPI_HostAddress}}/api/tecnicos
+Accept: application/json
+
+### Crear un nuevo técnico
+POST {{PiscinerosAPI_HostAddress}}/api/tecnicos
+Content-Type: application/json
+
+{
+  "nombre": "Juan Pérez",
+  "rut": "12345678-9",
+  "telefono": "+56998765432",
+  "montoPorVisita": 15000.00
+}
