@@ -480,3 +480,8 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Ignorar archivos de datos de Excel
+Datos/
+*.xlsx
+*.csv
