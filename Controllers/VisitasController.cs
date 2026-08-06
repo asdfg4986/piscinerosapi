@@ -84,6 +84,29 @@ namespace PiscinerosAPI.Controllers
             return NoContent();
         }
 
+        // GET: api/Visitas/tecnico/5/hoy
+        // Devuelve solo las visitas asignadas a un técnico específico para el día de hoy
+        [HttpGet("tecnico/{tecnicoId}/hoy")]
+        public async Task<ActionResult<IEnumerable<Visita>>> GetRutaDiaria(int tecnicoId)
+        {
+            // Obtenemos la fecha de hoy a las 00:00:00
+            var hoy = DateTime.Today;
+
+            var rutaDiaria = await _context.Visitas
+                .Include(v => v.Cliente)
+                .Where(v => v.TecnicoId == tecnicoId && v.FechaVisita.Date == hoy)
+                .OrderBy(v => v.FechaVisita) // Las ordenamos cronológicamente
+                .ToListAsync();
+
+            if (!rutaDiaria.Any())
+            {
+                // Si no tiene visitas hoy, devolvemos un 200 OK con una lista vacía.
+                return Ok(new List<Visita>());
+            }
+
+            return Ok(rutaDiaria);
+        }
+
         // DELETE: api/Visitas/5
         // Usar solo para borrar registros creados por error.
         [HttpDelete("{id}")]
