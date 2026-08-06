@@ -10,5 +10,6 @@ namespace PiscinerosAPI.Models
 
         public DbSet<Cliente> Clientes { get; set; }
         public DbSet<Tecnico> Tecnicos { get; set; }
+        public DbSet<Visita> Visitas { get; set; }
     }
 }
