@@ -46,10 +46,10 @@ def procesar_clientes():
             response = requests.post(URL_API, json=payload, verify=False)
             
             if response.status_code == 201:
-                print(f"✅ Registrado: {payload['nombre']} ({payload['comuna']})")
+                print(f"Registrado: {payload['nombre']} ({payload['comuna']})")
                 contador_exitos += 1
             else:
-                print(f"❌ Error con {payload['nombre']}: {response.status_code} - {response.text}")
+                print(f"Error con {payload['nombre']}: {response.status_code} - {response.text}")
                 contador_errores += 1
                 
         print("\n--- RESUMEN DE MIGRACIÓN ---")
@@ -57,9 +57,9 @@ def procesar_clientes():
         print(f"Errores encontrados: {contador_errores}")
 
     except FileNotFoundError:
-        print(f"❌ Error: No se encontró el archivo '{ARCHIVO_EXCEL}'. Asegúrate de que esté en la misma carpeta que este script.")
+        print(f"Error: No se encontró el archivo '{ARCHIVO_EXCEL}'. Asegúrate de que esté en la misma carpeta que este script.")
     except Exception as e:
-        print(f"❌ Ocurrió un error general: {e}")
+        print(f"Ocurrió un error general: {e}")
 
 if __name__ == "__main__":
     procesar_clientes()
