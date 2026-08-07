@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PiscinerosAPI.Models;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,7 +9,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Habilitar los controladores
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    // Esto le dice a C# que si detecta un bucle (Visita -> Tecnico -> Visita), lo ignore y no explote
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+});
 
 builder.Services.AddCors(options =>
 {

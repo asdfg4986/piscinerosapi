@@ -107,6 +107,21 @@ namespace PiscinerosAPI.Controllers
             return Ok(rutaDiaria);
         }
 
+        // GET: api/Visitas/cliente/5
+        [HttpGet("cliente/{clienteId}")]
+        public async Task<ActionResult<IEnumerable<Visita>>> GetVisitasPorCliente(int clienteId)
+        {
+            // Buscamos en la tabla Visitas todas las que coincidan con el ClienteId
+            var visitas = await _context.Visitas
+                                        .Include (v => v.Tecnico)
+                                        .Where(v => v.ClienteId == clienteId)
+                                        .OrderByDescending(v => v.FechaVisita) // Ordenamos para que la más reciente salga primero
+                                        .ToListAsync();
+
+            // Aunque no tenga visitas, devolvemos un 200 OK con una lista vacía.
+            return Ok(visitas);
+        }
+
         // DELETE: api/Visitas/5
         // Usar solo para borrar registros creados por error.
         [HttpDelete("{id}")]
