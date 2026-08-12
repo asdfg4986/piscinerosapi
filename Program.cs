@@ -1,12 +1,48 @@
 using Microsoft.EntityFrameworkCore;
 using PiscinerosAPI.Models;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Conexión a la base de datos
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Activamos Identity con soporte para Usuarios y Roles
+builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+{
+    // Reglas de las contraseñas
+    options.Password.RequireDigit = true;
+    options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
+
+// Configuración de JWT
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+    };
+});
 
 // Habilitar los controladores
 builder.Services.AddControllers().AddJsonOptions(options =>
@@ -44,5 +80,47 @@ app.UseCors("AllowAngular");
 
 // Rutas de la API
 app.MapControllers();
+
+// --- INICIO: Creación de Roles y Usuario Maestro ---
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>> ();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>> ();
+
+    // 1. Crear los roles si no existen
+    string[] roles = { "Administrador", "Tecnico" };
+    foreach (var rol in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(rol))
+        {
+            await roleManager.CreateAsync(new IdentityRole(rol));
+        }
+    }
+
+    // 2. Crear el usuario administrador inicial
+    string adminEmail = "franco@piscineros.cl";
+    string adminPassword = "REDACTED_ADMIN_PASS"; // ¡Recuerda cambiarla cuando subas a producción!
+
+    if (await userManager.FindByEmailAsync(adminEmail) == null)
+    {
+        var adminUser = new IdentityUser
+        {
+            UserName = adminEmail,
+            Email = adminEmail
+        };
+
+        var result = await userManager.CreateAsync(adminUser, adminPassword);
+
+        if (result.Succeeded)
+        {
+            // Le asignamos el rol de Administrador
+            await userManager.AddToRoleAsync(adminUser, "Administrador");
+        }
+    }
+}
+// --- FIN: Creación de Roles y Usuario Maestro ---
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.Run();

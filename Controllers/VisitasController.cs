@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PiscinerosAPI.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace PiscinerosAPI.Controllers
 {
+    [Authorize(Roles = "Administrador, Tecnico")]
     [Route("api/[controller]")]
     [ApiController]
     public class VisitasController : ControllerBase
@@ -43,7 +45,9 @@ namespace PiscinerosAPI.Controllers
             return visita;
         }
 
+
         // POST: api/Visitas
+        [Authorize(Roles = "Administrador")]
         [HttpPost]
         public async Task<ActionResult<Visita>> PostVisita(Visita visita)
         {
@@ -124,6 +128,7 @@ namespace PiscinerosAPI.Controllers
 
         // DELETE: api/Visitas/5
         // Usar solo para borrar registros creados por error.
+        [Authorize(Roles = "Administrador")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteVisita(int id)
         {
