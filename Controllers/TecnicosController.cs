@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PiscinerosAPI.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace PiscinerosAPI.Controllers
 {
+    [Authorize(Roles = "Administrador")]
     [Route("api/[controller]")]
     [ApiController]
     public class TecnicosController : ControllerBase
