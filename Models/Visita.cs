@@ -35,5 +35,7 @@ namespace PiscinerosAPI.Models
         public EstadoVisita Estado { get; set; } = EstadoVisita.Programada;
 
         public string? Observaciones { get; set; }
+
+        public string? FotoUrl { get; set; } // URL de la foto tomada durante la visita
     }
 }
