@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using PiscinerosAPI.Models;
 using Microsoft.AspNetCore.Authorization;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 
 namespace PiscinerosAPI.Controllers
 {
@@ -11,10 +13,12 @@ namespace PiscinerosAPI.Controllers
     public class VisitasController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public VisitasController(ApplicationDbContext context)
+        public VisitasController(ApplicationDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         // GET: api/Visitas
@@ -124,6 +128,41 @@ namespace PiscinerosAPI.Controllers
 
             // Aunque no tenga visitas, devolvemos un 200 OK con una lista vacía.
             return Ok(visitas);
+        }
+
+        // POST: api/Visitas/5/foto
+        // Permite subir una foto asociada a una visita específica. La foto se almacena en Azure Blob Storage y se guarda la URL en la base de datos.
+        [HttpPost("{id}/foto")]
+        public async Task<ActionResult<object>> SubirFotoVisita(int id, IFormFile foto)
+        {
+            if (foto == null || foto.Length == 0)
+                return BadRequest("No se envió ninguna imagen.");
+
+            var visita = await _context.Visitas.FindAsync(id);
+            if (visita == null)
+                return NotFound("Visita no encontrada.");
+
+            // Conectar a Azure
+            string connectionString = _configuration.GetConnectionString("AzureStorage");
+            var blobServiceClient = new BlobServiceClient(connectionString);
+            var containerClient = blobServiceClient.GetBlobContainerClient("fotos-piscinas");
+            await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
+
+            // Generar nombre único y subir
+            var extension = Path.GetExtension(foto.FileName);
+            var nombreArchivo = $"{Guid.NewGuid()}{extension}";
+            var blobClient = containerClient.GetBlobClient(nombreArchivo);
+
+            using (var stream = foto.OpenReadStream())
+            {
+                await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = foto.ContentType });
+            }
+
+            // Guardar en la BD
+            visita.FotoUrl = blobClient.Uri.ToString();
+            await _context.SaveChangesAsync();
+
+            return Ok(new { mensaje = "Foto subida con éxito", url = visita.FotoUrl });
         }
 
         // DELETE: api/Visitas/5
