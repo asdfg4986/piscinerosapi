@@ -184,6 +184,7 @@ namespace PiscinerosAPI.Controllers
             var visitas = await _context.Visitas
                 .AsNoTracking()
                 .Include(v => v.Cliente) // Traemos los datos del cliente para que el técnico sepa a dónde ir
+                .Include(v => v.Tecnico)
                 .Where(v => v.TecnicoId == tecnicoId &&
                             v.FechaVisita >= inicioDelDia &&
                             v.FechaVisita < inicioDelDiaSiguiente)
@@ -200,6 +201,10 @@ namespace PiscinerosAPI.Controllers
                         v.Cliente.Nombre,
                         v.Cliente.Direccion,
                         v.Cliente.Comuna
+                    },
+                    Tecnico = new
+                    {
+                        v.Tecnico.Nombre
                     }
                 })
                 .ToListAsync();
