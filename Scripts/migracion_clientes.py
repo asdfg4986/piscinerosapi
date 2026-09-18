@@ -1,65 +1,105 @@
 import pandas as pd
 import requests
 import urllib3
+import os
+import glob
 
-# Desactivar advertencias SSL en entorno de desarrollo local
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-URL_API = "https://localhost:7168/api/clientes" # Verifica que el puerto sea el correcto
-ARCHIVO_EXCEL = "../Datos/clientes_prueba.xlsx" # El nombre exacto de tu archivo
+URL_API_CLIENTES = "https://localhost:7168/api/clientes"
+URL_API_LOGIN = "https://localhost:7168/api/auth/login"
+CARPETA_DATOS = "../Datos/"
+
+ADMIN_EMAIL = "ejemplo@piscineros.cl"
+ADMIN_PASSWORD = "REDACTED_ADMIN_PASS" 
+
+def obtener_token():
+    print("Iniciando sesión como Administrador...")
+    payload = {"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD}
+    response = requests.post(URL_API_LOGIN, json=payload, verify=False)
+    
+    if response.status_code == 200:
+        return response.json().get("token")
+    else:
+        print("Error al iniciar sesión. Revisa las credenciales.")
+        return None
+
+def limpiar_y_extraer_datos(df):
+    # Estandarizamos los nombres de las columnas: en mayúsculas y sin espacios a los lados
+    df.columns = df.columns.str.strip().str.upper()
+    df = df.dropna(how='all').fillna("")
+    
+    clientes_list = []
+    
+    # Identificar la columna de observaciones dinámicamente
+    columna_obs = "OBSERVACIONES"
+    if "UNNAMED: 12" in df.columns and columna_obs not in df.columns:
+        columna_obs = "UNNAMED: 12" # Caso del Excel de Cristobal
+
+    for index, row in df.iterrows():
+        # Saltamos filas donde no hay nombre de cliente
+        if str(row.get("CLIENTE", "")).strip() == "":
+            continue
+
+        visitas = row.get("VISITAS", 0)
+        visitas = int(visitas) if str(visitas).isdigit() else 0
+
+        payload = {
+            "nombre": str(row.get("CLIENTE", "")).strip(),
+            "direccion": str(row.get("DIRECCIÓN", "")).strip(),
+            "comuna": str(row.get("COMUNA", "")).strip(),
+            "telefono": str(row.get("CELULAR", "")).strip(),
+            "visitasPorMes": visitas,
+            "diaPreferido": str(row.get("DÍA", "")).strip(),
+            "observaciones": str(row.get(columna_obs, "")).strip(),
+            "activo": True
+        }
+        clientes_list.append(payload)
+        
+    return clientes_list
 
 def procesar_clientes():
-    print(f"Cargando el archivo {ARCHIVO_EXCEL}...")
+    token = obtener_token()
+    if not token:
+        return
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+
+    archivos_excel = glob.glob(os.path.join(CARPETA_DATOS, "*.xlsx"))
     
-    try:
-        # Leemos el Excel
-        df = pd.read_excel(ARCHIVO_EXCEL)
+    if not archivos_excel:
+        print(f"No se encontraron archivos Excel en {CARPETA_DATOS}")
+        return
 
-        # Elimina las filas donde TODOS los valores sean nulos (NaN)
-        df = df.dropna(how='all')
-        
-        # Llenamos los valores nulos (NaN) con strings vacíos para campos de texto
-        df = df.fillna("")
-        
-        contador_exitos = 0
-        contador_errores = 0
+    total_exitos = 0
+    total_errores = 0
 
-        for index, row in df.iterrows():
-            # Limpieza específica para campos numéricos que podrían venir vacíos
-            # Si 'Visitas' está vacío, asumimos 0. Si viene como texto, lo forzamos a entero.
-            visitas = row["VISITAS"] if row["VISITAS"] != "" else 0
-            visitas = int(visitas)
+    for archivo in archivos_excel:
+        print(f"\nProcesando archivo: {os.path.basename(archivo)}...")
+        try:
+            df = pd.read_excel(archivo)
+            lista_clientes = limpiar_y_extraer_datos(df)
 
-            # Construimos el diccionario mapeando las columnas del Excel a las propiedades de C#
-            # IMPORTANTE: Los nombres entre corchetes row["..."] deben coincidir EXACTAMENTE con tu Excel
-            payload = {
-                "nombre": str(row["CLIENTE"]).strip(),
-                "direccion": str(row["DIRECCIÓN"]).strip(),
-                "comuna": str(row["COMUNA"]).strip(),
-                "telefono": str(row["CELULAR"]).strip(),
-                "visitasPorMes": visitas,
-                "diaPreferido": str(row["Día"]).strip(),
-                "observaciones": str(row["Observaciones"]).strip()
-            }
-            
-            # Hacemos la petición POST a la API
-            response = requests.post(URL_API, json=payload, verify=False)
-            
-            if response.status_code == 201:
-                print(f"Registrado: {payload['nombre']} ({payload['comuna']})")
-                contador_exitos += 1
-            else:
-                print(f"Error con {payload['nombre']}: {response.status_code} - {response.text}")
-                contador_errores += 1
+            for payload in lista_clientes:
+                response = requests.post(URL_API_CLIENTES, json=payload, headers=headers, verify=False)
                 
-        print("\n--- RESUMEN DE MIGRACIÓN ---")
-        print(f"Clientes guardados exitosamente: {contador_exitos}")
-        print(f"Errores encontrados: {contador_errores}")
+                if response.status_code == 201:
+                    print(f"  [OK] Registrado: {payload['nombre']}")
+                    total_exitos += 1
+                else:
+                    print(f"  [ERROR] {payload['nombre']}: {response.text}")
+                    total_errores += 1
+        except Exception as e:
+            print(f"Error procesando el archivo {os.path.basename(archivo)}: {e}")
 
-    except FileNotFoundError:
-        print(f"Error: No se encontró el archivo '{ARCHIVO_EXCEL}'. Asegúrate de que esté en la misma carpeta que este script.")
-    except Exception as e:
-        print(f"Ocurrió un error general: {e}")
+    print("\n==============================")
+    print("--- RESUMEN DE MIGRACIÓN ---")
+    print(f"Total clientes guardados: {total_exitos}")
+    print(f"Total errores encontrados: {total_errores}")
+    print("==============================")
 
 if __name__ == "__main__":
     procesar_clientes()

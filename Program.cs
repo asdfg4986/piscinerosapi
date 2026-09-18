@@ -11,7 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Conexión a la base de datos
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), 
+    sqlOptions => sqlOptions.EnableRetryOnFailure()));
 
 // Registro de Servicios Propios
 builder.Services.AddHttpContextAccessor();
@@ -60,7 +61,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
-        policy.WithOrigins("http://localhost:4200") // El puerto donde correrá Angular
+        policy.AllowAnyOrigin() // Permitir cualquier origen en producción inicial
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -118,7 +119,8 @@ using (var scope = app.Services.CreateScope())
 
     // 2. Crear el usuario administrador inicial
     string adminEmail = "franco@piscineros.cl";
-    string adminPassword = "REDACTED_ADMIN_PASS"; // ¡Recuerda cambiarla cuando subas a producción!
+    // Leemos la contraseña desde appsettings o variables de entorno (Azure). Si no existe, usamos una segura temporal.
+    string adminPassword = builder.Configuration["AdminPassword"] ?? "REDACTED_ADMIN_PASS"; 
 
     if (await userManager.FindByEmailAsync(adminEmail) == null)
     {

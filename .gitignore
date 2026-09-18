@@ -485,3 +485,7 @@ $RECYCLE.BIN/
 Datos/
 *.xlsx
 *.csv
+
+# Ignorar scripts de migración de clientes
+Scripts/
+Scripts/migracion_clientes.py
