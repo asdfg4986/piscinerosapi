@@ -5,12 +5,17 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using PiscinerosAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Conexión a la base de datos
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Registro de Servicios Propios
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IImageService, LocalImageService>();
 
 // Activamos Identity con soporte para Usuarios y Roles
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
@@ -75,6 +80,20 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Asegurar que exista la carpeta wwwroot/fotos
+var fotosPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "fotos");
+if (!Directory.Exists(fotosPath))
+{
+    Directory.CreateDirectory(fotosPath);
+}
+
+// Configurar para servir la carpeta fotos
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(fotosPath),
+    RequestPath = "/fotos"
+});
 
 app.UseCors("AllowAngular");
 
