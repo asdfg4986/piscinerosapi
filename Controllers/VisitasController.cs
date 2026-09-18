@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PiscinerosAPI.Models;
 using Microsoft.AspNetCore.Authorization;
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
+using PiscinerosAPI.Services;
+using PiscinerosAPI.DTOs;
 
 namespace PiscinerosAPI.Controllers
 {
@@ -14,64 +14,150 @@ namespace PiscinerosAPI.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IImageService _imageService;
 
-        public VisitasController(ApplicationDbContext context, IConfiguration configuration)
+        public VisitasController(ApplicationDbContext context, IConfiguration configuration, IImageService imageService)
         {
             _context = context;
             _configuration = configuration;
+            _imageService = imageService;
         }
 
         // GET: api/Visitas
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Visita>>> GetVisitas()
+        public async Task<ActionResult<IEnumerable<VisitaResponseDto>>> GetVisitas()
         {
-            // Traemos las visitas incluyendo los datos del Cliente y Técnico
-            return await _context.Visitas
+            var visitas = await _context.Visitas
+                .AsNoTracking()
                 .Include(v => v.Cliente)
                 .Include(v => v.Tecnico)
+                .Select(v => new VisitaResponseDto
+                {
+                    Id = v.Id,
+                    ClienteId = v.ClienteId,
+                    Cliente = v.Cliente == null ? null : new ClienteDto
+                    {
+                        Id = v.Cliente.Id,
+                        Nombre = v.Cliente.Nombre,
+                        Direccion = v.Cliente.Direccion,
+                        Comuna = v.Cliente.Comuna,
+                        Telefono = v.Cliente.Telefono,
+                        Correo = v.Cliente.Correo,
+                        VisitasPorMes = v.Cliente.VisitasPorMes,
+                        DiaPreferido = v.Cliente.DiaPreferido ?? "",
+                        Observaciones = v.Cliente.Observaciones ?? ""
+                    },
+                    TecnicoId = v.TecnicoId,
+                    Tecnico = v.Tecnico == null ? null : new TecnicoDto
+                    {
+                        Id = v.Tecnico.Id,
+                        Nombre = v.Tecnico.Nombre,
+                        RUT = v.Tecnico.RUT ?? "",
+                        Telefono = v.Tecnico.Telefono ?? "",
+                        MontoPorVisita = v.Tecnico.MontoPorVisita
+                    },
+                    FechaVisita = v.FechaVisita,
+                    Estado = (int)v.Estado,
+                    Observaciones = v.Observaciones,
+                    FotoUrl = v.FotoUrl
+                })
                 .ToListAsync();
+
+            return Ok(visitas);
         }
 
         // GET: api/Visitas/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Visita>> GetVisita(int id)
+        public async Task<ActionResult<VisitaResponseDto>> GetVisita(int id)
         {
             var visita = await _context.Visitas
+                .AsNoTracking()
                 .Include(v => v.Cliente)
                 .Include(v => v.Tecnico)
-                .FirstOrDefaultAsync(v => v.Id == id);
+                .Where(v => v.Id == id)
+                .Select(v => new VisitaResponseDto
+                {
+                    Id = v.Id,
+                    ClienteId = v.ClienteId,
+                    Cliente = v.Cliente == null ? null : new ClienteDto
+                    {
+                        Id = v.Cliente.Id,
+                        Nombre = v.Cliente.Nombre,
+                        Direccion = v.Cliente.Direccion,
+                        Comuna = v.Cliente.Comuna,
+                        Telefono = v.Cliente.Telefono,
+                        Correo = v.Cliente.Correo,
+                        VisitasPorMes = v.Cliente.VisitasPorMes,
+                        DiaPreferido = v.Cliente.DiaPreferido ?? "",
+                        Observaciones = v.Cliente.Observaciones ?? ""
+                    },
+                    TecnicoId = v.TecnicoId,
+                    Tecnico = v.Tecnico == null ? null : new TecnicoDto
+                    {
+                        Id = v.Tecnico.Id,
+                        Nombre = v.Tecnico.Nombre,
+                        RUT = v.Tecnico.RUT ?? "",
+                        Telefono = v.Tecnico.Telefono ?? "",
+                        MontoPorVisita = v.Tecnico.MontoPorVisita
+                    },
+                    FechaVisita = v.FechaVisita,
+                    Estado = (int)v.Estado,
+                    Observaciones = v.Observaciones,
+                    FotoUrl = v.FotoUrl
+                })
+                .FirstOrDefaultAsync();
 
             if (visita == null)
             {
                 return NotFound();
             }
 
-            return visita;
+            return Ok(visita);
         }
 
 
         // POST: api/Visitas
         [Authorize(Roles = "Administrador")]
         [HttpPost]
-        public async Task<ActionResult<Visita>> PostVisita(Visita visita)
+        public async Task<ActionResult<VisitaResponseDto>> PostVisita(VisitaRequestDto dto)
         {
+            var visita = new Visita
+            {
+                ClienteId = dto.ClienteId ?? 0,
+                TecnicoId = dto.TecnicoId ?? 0,
+                FechaVisita = dto.FechaVisita ?? DateTime.Now,
+                Estado = dto.Estado.HasValue ? (EstadoVisita)dto.Estado.Value : EstadoVisita.Programada,
+                Observaciones = dto.Observaciones,
+                FotoUrl = dto.FotoUrl
+            };
+
             _context.Visitas.Add(visita);
             await _context.SaveChangesAsync();
 
-            // Usamos nameof(GetVisita) para que apunte correctamente al método de arriba
-            return CreatedAtAction(nameof(GetVisita), new { id = visita.Id }, visita);
+            return CreatedAtAction(nameof(GetVisita), new { id = visita.Id }, new { id = visita.Id });
         }
 
         // PUT: api/Visitas/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutVisita(int id, Visita visita)
+        public async Task<IActionResult> PutVisita(int id, VisitaRequestDto dto)
         {
-            if (id != visita.Id)
+            if (id != dto.Id)
             {
                 return BadRequest("El ID de la ruta no coincide con el ID del cuerpo (JSON).");
             }
 
-            _context.Entry(visita).State = EntityState.Modified;
+            var visita = await _context.Visitas.FindAsync(id);
+            if (visita == null) return NotFound();
+
+            if (dto.ClienteId != null) visita.ClienteId = dto.ClienteId.Value;
+            if (dto.TecnicoId != null) visita.TecnicoId = dto.TecnicoId.Value;
+            if (dto.FechaVisita != null) visita.FechaVisita = dto.FechaVisita.Value;
+            if (dto.Estado != null) visita.Estado = (EstadoVisita)dto.Estado.Value;
+            if (dto.Observaciones != null) visita.Observaciones = dto.Observaciones;
+            if (!string.IsNullOrEmpty(dto.FotoUrl)) 
+            {
+                visita.FotoUrl = dto.FotoUrl;
+            }
 
             try
             {
@@ -79,40 +165,46 @@ namespace PiscinerosAPI.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_context.Visitas.Any(e => e.Id == id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
 
             return NoContent();
         }
 
-        // GET: api/Visitas/tecnico/5/hoy
-        // Devuelve solo las visitas asignadas a un técnico específico para el día de hoy
-        [HttpGet("tecnico/{tecnicoId}/hoy")]
-        public async Task<ActionResult<IEnumerable<Visita>>> GetRutaDiaria(int tecnicoId)
+        // GET: api/Visitas/tecnico/5/fecha/2026-08-13
+        // Endpoint para obtener visitas por técnico y fecha
+        [HttpGet("tecnico/{tecnicoId}/fecha/{fecha}")]
+        public async Task<ActionResult<IEnumerable<object>>> GetVisitasPorFecha(int tecnicoId, DateTime fecha)
         {
-            // Obtenemos la fecha de hoy a las 00:00:00
-            var hoy = DateTime.Today;
+            // 1. Establecemos los límites del día (desde las 00:00:00 hasta justo antes del día siguiente)
+            var inicioDelDia = fecha.Date;
+            var inicioDelDiaSiguiente = inicioDelDia.AddDays(1);
 
-            var rutaDiaria = await _context.Visitas
-                .Include(v => v.Cliente)
-                .Where(v => v.TecnicoId == tecnicoId && v.FechaVisita.Date == hoy)
-                .OrderBy(v => v.FechaVisita) // Las ordenamos cronológicamente
+            // 2. Buscamos en la base de datos
+            var visitas = await _context.Visitas
+                .AsNoTracking()
+                .Include(v => v.Cliente) // Traemos los datos del cliente para que el técnico sepa a dónde ir
+                .Where(v => v.TecnicoId == tecnicoId &&
+                            v.FechaVisita >= inicioDelDia &&
+                            v.FechaVisita < inicioDelDiaSiguiente)
+                .OrderBy(v => v.FechaVisita) // Ordenamos cronológicamente para que la ruta tenga sentido
+                .Select(v => new
+                {
+                    v.Id,
+                    v.FechaVisita,
+                    v.Estado,
+                    v.Observaciones,
+                    v.FotoUrl,
+                    Cliente = new
+                    {
+                        v.Cliente.Nombre,
+                        v.Cliente.Direccion,
+                        v.Cliente.Comuna
+                    }
+                })
                 .ToListAsync();
 
-            if (!rutaDiaria.Any())
-            {
-                // Si no tiene visitas hoy, devolvemos un 200 OK con una lista vacía.
-                return Ok(new List<Visita>());
-            }
-
-            return Ok(rutaDiaria);
+            return Ok(visitas);
         }
 
         // GET: api/Visitas/cliente/5
@@ -121,6 +213,7 @@ namespace PiscinerosAPI.Controllers
         {
             // Buscamos en la tabla Visitas todas las que coincidan con el ClienteId
             var visitas = await _context.Visitas
+                                        .AsNoTracking()
                                         .Include (v => v.Tecnico)
                                         .Where(v => v.ClienteId == clienteId)
                                         .OrderByDescending(v => v.FechaVisita) // Ordenamos para que la más reciente salga primero
@@ -135,34 +228,30 @@ namespace PiscinerosAPI.Controllers
         [HttpPost("{id}/foto")]
         public async Task<ActionResult<object>> SubirFotoVisita(int id, IFormFile foto)
         {
-            if (foto == null || foto.Length == 0)
-                return BadRequest("No se envió ninguna imagen.");
-
             var visita = await _context.Visitas.FindAsync(id);
             if (visita == null)
                 return NotFound("Visita no encontrada.");
 
-            // Conectar a Azure
-            string connectionString = _configuration.GetConnectionString("AzureStorage");
-            var blobServiceClient = new BlobServiceClient(connectionString);
-            var containerClient = blobServiceClient.GetBlobContainerClient("fotos-piscinas");
-            await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
-
-            // Generar nombre único y subir
-            var extension = Path.GetExtension(foto.FileName);
-            var nombreArchivo = $"{Guid.NewGuid()}{extension}";
-            var blobClient = containerClient.GetBlobClient(nombreArchivo);
-
-            using (var stream = foto.OpenReadStream())
+            try 
             {
-                await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = foto.ContentType });
+                // Usar el ImageService para manejar la lógica de guardado
+                var fotoUrl = await _imageService.SubirImagenAsync(foto, "fotos");
+
+                // Guardar en la BD
+                visita.FotoUrl = fotoUrl;
+                await _context.SaveChangesAsync();
+
+                return Ok(new { mensaje = "Foto subida con éxito", url = visita.FotoUrl });
             }
-
-            // Guardar en la BD
-            visita.FotoUrl = blobClient.Uri.ToString();
-            await _context.SaveChangesAsync();
-
-            return Ok(new { mensaje = "Foto subida con éxito", url = visita.FotoUrl });
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                // Devolvemos el error real para poder diagnosticarlo en el frontend
+                return StatusCode(500, new { mensaje = "Error interno del servidor", detalle = ex.Message });
+            }
         }
 
         // DELETE: api/Visitas/5

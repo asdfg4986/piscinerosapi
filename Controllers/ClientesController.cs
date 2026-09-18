@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PiscinerosAPI.Models;
 using Microsoft.AspNetCore.Authorization;
+using PiscinerosAPI.DTOs;
 
 namespace PiscinerosAPI.Controllers
 {
@@ -19,16 +20,45 @@ namespace PiscinerosAPI.Controllers
 
         // GET: api/tecnicos
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Cliente>>> GetClientes()
+        public async Task<ActionResult<IEnumerable<ClienteDto>>> GetClientes()
         {
-            return await _context.Clientes.ToListAsync();
+            return await _context.Clientes
+                .AsNoTracking()
+                .Select(c => new ClienteDto
+                {
+                    Id = c.Id,
+                    Nombre = c.Nombre,
+                    Direccion = c.Direccion,
+                    Comuna = c.Comuna,
+                    Telefono = c.Telefono,
+                    Correo = c.Correo,
+                    VisitasPorMes = c.VisitasPorMes,
+                    DiaPreferido = c.DiaPreferido,
+                    Observaciones = c.Observaciones
+                })
+                .ToListAsync();
         }
 
         // GET: api/tecnicos/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Cliente>> GetCliente(int id)
+        public async Task<ActionResult<ClienteDto>> GetCliente(int id)
         {
-            var cliente = await _context.Clientes.FindAsync(id);
+            var cliente = await _context.Clientes
+                .AsNoTracking()
+                .Where(c => c.Id == id)
+                .Select(c => new ClienteDto
+                {
+                    Id = c.Id,
+                    Nombre = c.Nombre,
+                    Direccion = c.Direccion,
+                    Comuna = c.Comuna,
+                    Telefono = c.Telefono,
+                    Correo = c.Correo,
+                    VisitasPorMes = c.VisitasPorMes,
+                    DiaPreferido = c.DiaPreferido,
+                    Observaciones = c.Observaciones
+                })
+                .FirstOrDefaultAsync();
 
             if (cliente == null)
             {
@@ -40,27 +70,47 @@ namespace PiscinerosAPI.Controllers
 
         // POST: api/tecnicos
         [HttpPost]
-        public async Task<ActionResult<Cliente>> PostCliente(Cliente cliente)
+        public async Task<ActionResult<ClienteDto>> PostCliente(ClienteRequestDto dto)
         {
+            var cliente = new Cliente
+            {
+                Nombre = dto.Nombre ?? "",
+                Direccion = dto.Direccion ?? "",
+                Comuna = dto.Comuna ?? "",
+                Telefono = dto.Telefono ?? "",
+                Correo = dto.Correo ?? "",
+                VisitasPorMes = dto.VisitasPorMes ?? 0,
+                DiaPreferido = dto.DiaPreferido ?? "",
+                Observaciones = dto.Observaciones ?? ""
+            };
+
             _context.Clientes.Add(cliente);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetCliente), new { id = cliente.Id }, cliente);
+            return CreatedAtAction(nameof(GetCliente), new { id = cliente.Id }, new { id = cliente.Id });
         }
 
         // PUT: api/clientes/5
         // Actualiza un cliente existente
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutCliente(int id, Cliente cliente)
+        public async Task<IActionResult> PutCliente(int id, ClienteRequestDto dto)
         {
-            // Validamos que el ID de la URL coincida con el ID del JSON
-            if (id != cliente.Id)
+            if (id != dto.Id)
             {
                 return BadRequest("El ID de la URL no coincide con el ID del cuerpo de la petición.");
             }
 
-            // Le decimos a Entity Framework que este objeto fue modificado
-            _context.Entry(cliente).State = EntityState.Modified;
+            var cliente = await _context.Clientes.FindAsync(id);
+            if (cliente == null) return NotFound();
+
+            if (dto.Nombre != null) cliente.Nombre = dto.Nombre;
+            if (dto.Direccion != null) cliente.Direccion = dto.Direccion;
+            if (dto.Comuna != null) cliente.Comuna = dto.Comuna;
+            if (dto.Telefono != null) cliente.Telefono = dto.Telefono;
+            if (dto.Correo != null) cliente.Correo = dto.Correo;
+            if (dto.VisitasPorMes != null) cliente.VisitasPorMes = dto.VisitasPorMes.Value;
+            if (dto.DiaPreferido != null) cliente.DiaPreferido = dto.DiaPreferido;
+            if (dto.Observaciones != null) cliente.Observaciones = dto.Observaciones;
 
             try
             {
@@ -68,14 +118,7 @@ namespace PiscinerosAPI.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!ClienteExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
 
             return NoContent();

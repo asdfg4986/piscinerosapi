@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PiscinerosAPI.Models;
 using Microsoft.AspNetCore.Authorization;
+using PiscinerosAPI.DTOs;
 
 namespace PiscinerosAPI.Controllers
 {
@@ -19,16 +20,37 @@ namespace PiscinerosAPI.Controllers
 
         // GET: api/tecnicos
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Tecnico>>> GetTecnicos()
+        public async Task<ActionResult<IEnumerable<TecnicoDto>>> GetTecnicos()
         {
-            return await _context.Tecnicos.ToListAsync();
+            return await _context.Tecnicos
+                .AsNoTracking()
+                .Select(t => new TecnicoDto
+                {
+                    Id = t.Id,
+                    Nombre = t.Nombre,
+                    RUT = t.RUT,
+                    Telefono = t.Telefono,
+                    MontoPorVisita = t.MontoPorVisita
+                })
+                .ToListAsync();
         }
 
         // GET: api/tecnicos/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Tecnico>> GetTecnico(int id)
+        public async Task<ActionResult<TecnicoDto>> GetTecnico(int id)
         {
-            var tecnico = await _context.Tecnicos.FindAsync(id);
+            var tecnico = await _context.Tecnicos
+                .AsNoTracking()
+                .Where(t => t.Id == id)
+                .Select(t => new TecnicoDto
+                {
+                    Id = t.Id,
+                    Nombre = t.Nombre,
+                    RUT = t.RUT,
+                    Telefono = t.Telefono,
+                    MontoPorVisita = t.MontoPorVisita
+                })
+                .FirstOrDefaultAsync();
 
             if (tecnico == null)
             {
@@ -40,24 +62,38 @@ namespace PiscinerosAPI.Controllers
 
         // POST: api/tecnicos
         [HttpPost]
-        public async Task<ActionResult<Tecnico>> PostTecnico(Tecnico tecnico)
+        public async Task<ActionResult<TecnicoDto>> PostTecnico(TecnicoRequestDto dto)
         {
+            var tecnico = new Tecnico
+            {
+                Nombre = dto.Nombre ?? "",
+                RUT = dto.RUT ?? "",
+                Telefono = dto.Telefono ?? "",
+                MontoPorVisita = dto.MontoPorVisita ?? 0
+            };
+
             _context.Tecnicos.Add(tecnico);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetTecnico), new { id = tecnico.Id }, tecnico);
+            return CreatedAtAction(nameof(GetTecnico), new { id = tecnico.Id }, new { id = tecnico.Id });
         }
 
         // PUT: api/tecnicos/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTecnico(int id, Tecnico tecnico)
+        public async Task<IActionResult> PutTecnico(int id, TecnicoRequestDto dto)
         {
-            if (id != tecnico.Id)
+            if (id != dto.Id)
             {
                 return BadRequest();
             }
 
-            _context.Entry(tecnico).State = EntityState.Modified;
+            var tecnico = await _context.Tecnicos.FindAsync(id);
+            if (tecnico == null) return NotFound();
+
+            if (dto.Nombre != null) tecnico.Nombre = dto.Nombre;
+            if (dto.RUT != null) tecnico.RUT = dto.RUT;
+            if (dto.Telefono != null) tecnico.Telefono = dto.Telefono;
+            if (dto.MontoPorVisita != null) tecnico.MontoPorVisita = dto.MontoPorVisita.Value;
 
             try
             {
@@ -65,14 +101,7 @@ namespace PiscinerosAPI.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!TecnicoExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
 
             return NoContent();
