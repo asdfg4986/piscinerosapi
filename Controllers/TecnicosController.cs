@@ -12,10 +12,12 @@ namespace PiscinerosAPI.Controllers
     public class TecnicosController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly Microsoft.AspNetCore.Identity.UserManager<Microsoft.AspNetCore.Identity.IdentityUser> _userManager;
 
-        public TecnicosController(ApplicationDbContext context)
+        public TecnicosController(ApplicationDbContext context, Microsoft.AspNetCore.Identity.UserManager<Microsoft.AspNetCore.Identity.IdentityUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         // GET: api/tecnicos
@@ -30,7 +32,8 @@ namespace PiscinerosAPI.Controllers
                     Nombre = t.Nombre,
                     RUT = t.RUT,
                     Telefono = t.Telefono,
-                    MontoPorVisita = t.MontoPorVisita
+                    MontoPorVisita = t.MontoPorVisita,
+                    Correo = t.Correo
                 })
                 .ToListAsync();
         }
@@ -48,7 +51,8 @@ namespace PiscinerosAPI.Controllers
                     Nombre = t.Nombre,
                     RUT = t.RUT,
                     Telefono = t.Telefono,
-                    MontoPorVisita = t.MontoPorVisita
+                    MontoPorVisita = t.MontoPorVisita,
+                    Correo = t.Correo
                 })
                 .FirstOrDefaultAsync();
 
@@ -64,12 +68,36 @@ namespace PiscinerosAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<TecnicoDto>> PostTecnico(TecnicoRequestDto dto)
         {
+            if (string.IsNullOrEmpty(dto.Correo) || string.IsNullOrEmpty(dto.Password))
+            {
+                return BadRequest("El correo y la contraseña son obligatorios para crear la cuenta del técnico.");
+            }
+
+            // 1. Create IdentityUser
+            var user = new Microsoft.AspNetCore.Identity.IdentityUser
+            {
+                UserName = dto.Correo,
+                Email = dto.Correo
+            };
+
+            var result = await _userManager.CreateAsync(user, dto.Password);
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors);
+            }
+
+            // 2. Assign Role
+            await _userManager.AddToRoleAsync(user, "Tecnico");
+
+            // 3. Create Tecnico record linked to the IdentityUser
             var tecnico = new Tecnico
             {
                 Nombre = dto.Nombre ?? "",
                 RUT = dto.RUT ?? "",
                 Telefono = dto.Telefono ?? "",
-                MontoPorVisita = dto.MontoPorVisita ?? 0
+                MontoPorVisita = dto.MontoPorVisita ?? 0,
+                Correo = dto.Correo,
+                IdentityUserId = user.Id
             };
 
             _context.Tecnicos.Add(tecnico);
@@ -94,6 +122,7 @@ namespace PiscinerosAPI.Controllers
             if (dto.RUT != null) tecnico.RUT = dto.RUT;
             if (dto.Telefono != null) tecnico.Telefono = dto.Telefono;
             if (dto.MontoPorVisita != null) tecnico.MontoPorVisita = dto.MontoPorVisita.Value;
+            if (dto.Correo != null) tecnico.Correo = dto.Correo;
 
             try
             {

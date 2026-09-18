@@ -33,6 +33,7 @@ namespace PiscinerosAPI.DTOs
         public string RUT { get; set; } = string.Empty;
         public string Telefono { get; set; } = string.Empty;
         public decimal MontoPorVisita { get; set; }
+        public string Correo { get; set; } = string.Empty;
     }
 
     public class TecnicoRequestDto
@@ -42,6 +43,8 @@ namespace PiscinerosAPI.DTOs
         public string? RUT { get; set; }
         public string? Telefono { get; set; }
         public decimal? MontoPorVisita { get; set; }
+        public string? Correo { get; set; }
+        public string? Password { get; set; }
     }
 
     // DTO para cuando se consulta una Visita (GET)

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
 namespace PiscinerosAPI.Models
@@ -15,5 +15,10 @@ namespace PiscinerosAPI.Models
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         public decimal MontoPorVisita { get; set; }
+
+        public string Correo { get; set; } = string.Empty;
+
+        // The bridge to AspNetUsers table
+        public string? IdentityUserId { get; set; }
     }
 }
