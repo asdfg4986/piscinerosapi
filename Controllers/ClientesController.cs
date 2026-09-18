@@ -6,7 +6,7 @@ using PiscinerosAPI.DTOs;
 
 namespace PiscinerosAPI.Controllers
 {
-    [Authorize(Roles = "Administrador")]
+    [Authorize(Roles = "Administrador, Tecnico")]
     [Route("api/[controller]")]
     [ApiController]
     public class ClientesController : ControllerBase
@@ -19,6 +19,7 @@ namespace PiscinerosAPI.Controllers
         }
 
         // GET: api/tecnicos
+        [Authorize(Roles = "Administrador, Tecnico")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ClienteDto>>> GetClientes()
         {
@@ -40,6 +41,7 @@ namespace PiscinerosAPI.Controllers
         }
 
         // GET: api/tecnicos/5
+        [Authorize(Roles = "Administrador, Tecnico")]
         [HttpGet("{id}")]
         public async Task<ActionResult<ClienteDto>> GetCliente(int id)
         {
@@ -69,6 +71,7 @@ namespace PiscinerosAPI.Controllers
         }
 
         // POST: api/tecnicos
+        [Authorize(Roles = "Administrador")]
         [HttpPost]
         public async Task<ActionResult<ClienteDto>> PostCliente(ClienteRequestDto dto)
         {
@@ -92,6 +95,7 @@ namespace PiscinerosAPI.Controllers
 
         // PUT: api/clientes/5
         // Actualiza un cliente existente
+        [Authorize(Roles = "Administrador")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutCliente(int id, ClienteRequestDto dto)
         {
@@ -126,6 +130,7 @@ namespace PiscinerosAPI.Controllers
 
         // DELETE: api/clientes/5
         // Elimina un cliente de la base de datos
+        [Authorize(Roles = "Administrador")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCliente(int id)
         {

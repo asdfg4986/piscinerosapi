@@ -117,7 +117,7 @@ namespace PiscinerosAPI.Controllers
 
 
         // POST: api/Visitas
-        [Authorize(Roles = "Administrador")]
+        [Authorize(Roles = "Administrador, Tecnico")]
         [HttpPost]
         public async Task<ActionResult<VisitaResponseDto>> PostVisita(VisitaRequestDto dto)
         {
