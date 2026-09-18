@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -14,12 +14,14 @@ namespace PiscinerosAPI.Controllers
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly IConfiguration _configuration;
+        private readonly PiscinerosAPI.Models.ApplicationDbContext _context;
 
-        // Inyectamos el UserManager (para revisar la BD) y la Configuración (para leer appsettings.json)
-        public AuthController(UserManager<IdentityUser> userManager, IConfiguration configuration)
+        // Inyectamos el UserManager (para revisar la BD), la Configuración y el Contexto (para buscar al técnico)
+        public AuthController(UserManager<IdentityUser> userManager, IConfiguration configuration, PiscinerosAPI.Models.ApplicationDbContext context)
         {
             _userManager = userManager;
             _configuration = configuration;
+            _context = context;
         }
 
         [HttpPost("login")]
@@ -41,6 +43,16 @@ namespace PiscinerosAPI.Controllers
                     new Claim(ClaimTypes.Email, user.Email),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), // Un ID único para este token
                 };
+
+                // Si es un técnico, buscamos su ID en la tabla Tecnicos y lo agregamos
+                if (userRoles.Contains("Tecnico"))
+                {
+                    var tecnico = _context.Tecnicos.FirstOrDefault(t => t.IdentityUserId == user.Id);
+                    if (tecnico != null)
+                    {
+                        authClaims.Add(new Claim("TecnicoId", tecnico.Id.ToString()));
+                    }
+                }
 
                 // Agregamos cada rol que tenga el usuario al Token
                 foreach (var userRole in userRoles)
