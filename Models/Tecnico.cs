@@ -20,5 +20,7 @@ namespace PiscinerosAPI.Models
 
         // The bridge to AspNetUsers table
         public string? IdentityUserId { get; set; }
+
+        public bool Activo { get; set; } = true;
     }
 }

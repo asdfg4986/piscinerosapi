@@ -33,7 +33,8 @@ namespace PiscinerosAPI.Controllers
                     RUT = t.RUT,
                     Telefono = t.Telefono,
                     MontoPorVisita = t.MontoPorVisita,
-                    Correo = t.Correo
+                    Correo = t.Correo,
+                    Activo = t.Activo
                 })
                 .ToListAsync();
         }
@@ -52,7 +53,8 @@ namespace PiscinerosAPI.Controllers
                     RUT = t.RUT,
                     Telefono = t.Telefono,
                     MontoPorVisita = t.MontoPorVisita,
-                    Correo = t.Correo
+                    Correo = t.Correo,
+                    Activo = t.Activo
                 })
                 .FirstOrDefaultAsync();
 
@@ -97,7 +99,8 @@ namespace PiscinerosAPI.Controllers
                 Telefono = dto.Telefono ?? "",
                 MontoPorVisita = dto.MontoPorVisita ?? 0,
                 Correo = dto.Correo,
-                IdentityUserId = user.Id
+                IdentityUserId = user.Id,
+                Activo = dto.Activo ?? true
             };
 
             _context.Tecnicos.Add(tecnico);
@@ -123,6 +126,7 @@ namespace PiscinerosAPI.Controllers
             if (dto.Telefono != null) tecnico.Telefono = dto.Telefono;
             if (dto.MontoPorVisita != null) tecnico.MontoPorVisita = dto.MontoPorVisita.Value;
             if (dto.Correo != null) tecnico.Correo = dto.Correo;
+            if (dto.Activo != null) tecnico.Activo = dto.Activo.Value;
 
             try
             {

@@ -35,7 +35,8 @@ namespace PiscinerosAPI.Controllers
                     Correo = c.Correo,
                     VisitasPorMes = c.VisitasPorMes,
                     DiaPreferido = c.DiaPreferido,
-                    Observaciones = c.Observaciones
+                    Observaciones = c.Observaciones,
+                    Activo = c.Activo
                 })
                 .ToListAsync();
         }
@@ -58,7 +59,8 @@ namespace PiscinerosAPI.Controllers
                     Correo = c.Correo,
                     VisitasPorMes = c.VisitasPorMes,
                     DiaPreferido = c.DiaPreferido,
-                    Observaciones = c.Observaciones
+                    Observaciones = c.Observaciones,
+                    Activo = c.Activo
                 })
                 .FirstOrDefaultAsync();
 
@@ -84,7 +86,8 @@ namespace PiscinerosAPI.Controllers
                 Correo = dto.Correo ?? "",
                 VisitasPorMes = dto.VisitasPorMes ?? 0,
                 DiaPreferido = dto.DiaPreferido ?? "",
-                Observaciones = dto.Observaciones ?? ""
+                Observaciones = dto.Observaciones ?? "",
+                Activo = dto.Activo ?? true
             };
 
             _context.Clientes.Add(cliente);
@@ -115,6 +118,7 @@ namespace PiscinerosAPI.Controllers
             if (dto.VisitasPorMes != null) cliente.VisitasPorMes = dto.VisitasPorMes.Value;
             if (dto.DiaPreferido != null) cliente.DiaPreferido = dto.DiaPreferido;
             if (dto.Observaciones != null) cliente.Observaciones = dto.Observaciones;
+            if (dto.Activo != null) cliente.Activo = dto.Activo.Value;
 
             try
             {
