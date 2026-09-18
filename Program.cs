@@ -15,7 +15,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Registro de Servicios Propios
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IImageService, LocalImageService>();
+builder.Services.AddScoped<IImageService, AzureBlobImageService>();
 
 // Activamos Identity con soporte para Usuarios y Roles
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
