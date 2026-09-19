@@ -62,7 +62,7 @@ namespace PiscinerosAPI.Services
                     <ul>
                         <li><strong>Fecha:</strong> {visita.FechaVisita:dd/MM/yyyy HH:mm}</li>
                         <li><strong>Dirección:</strong> {visita.Cliente.Direccion}, {visita.Cliente.Comuna}</li>
-                        <li><strong>Observaciones:</strong> {visita.Observaciones ?? "Ninguna"}</li>
+                        <li><strong>Observaciones:</strong> {(string.IsNullOrWhiteSpace(visita.Observaciones) ? "Sin Observaciones" : visita.Observaciones)}</li>
                     </ul>
                     <hr/>
                     <p>Adjunto a este correo encontrarás una fotografía del estado de tu piscina al finalizar el trabajo.</p>
