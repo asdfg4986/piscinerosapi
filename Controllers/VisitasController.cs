@@ -15,12 +15,14 @@ namespace PiscinerosAPI.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly IImageService _imageService;
+        private readonly IEmailService _emailService;
 
-        public VisitasController(ApplicationDbContext context, IConfiguration configuration, IImageService imageService)
+        public VisitasController(ApplicationDbContext context, IConfiguration configuration, IImageService imageService, IEmailService emailService)
         {
             _context = context;
             _configuration = configuration;
             _imageService = imageService;
+            _emailService = emailService;
         }
 
         // GET: api/Visitas
@@ -149,6 +151,8 @@ namespace PiscinerosAPI.Controllers
             var visita = await _context.Visitas.FindAsync(id);
             if (visita == null) return NotFound();
 
+            var estadoAnterior = visita.Estado;
+
             if (dto.ClienteId != null) visita.ClienteId = dto.ClienteId.Value;
             if (dto.TecnicoId != null) visita.TecnicoId = dto.TecnicoId.Value;
             if (dto.FechaVisita != null) visita.FechaVisita = dto.FechaVisita.Value;
@@ -162,6 +166,18 @@ namespace PiscinerosAPI.Controllers
             try
             {
                 await _context.SaveChangesAsync();
+
+                // Si el estado cambió a Completada, enviar recibo por correo
+                if (estadoAnterior != EstadoVisita.Completada && visita.Estado == EstadoVisita.Completada)
+                {
+                    // Cargar el cliente explícitamente para obtener su nombre y correo
+                    await _context.Entry(visita).Reference(v => v.Cliente).LoadAsync();
+                    
+                    // Enviar correo de forma asíncrona sin bloquear la respuesta, o usando await normal
+                    // Aquí usamos await normal para asegurar que capturemos errores si los hay. 
+                    // Como el servicio está preparado con try-catch para la foto, no debería romper la app.
+                    await _emailService.EnviarReciboAsync(visita);
+                }
             }
             catch (DbUpdateConcurrencyException)
             {
