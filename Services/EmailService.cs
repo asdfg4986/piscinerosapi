@@ -64,6 +64,18 @@ namespace PiscinerosAPI.Services
                         <li><strong>Dirección:</strong> {visita.Cliente.Direccion}, {visita.Cliente.Comuna}</li>
                         <li><strong>Observaciones:</strong> {(string.IsNullOrWhiteSpace(visita.Observaciones) ? "Sin Observaciones" : visita.Observaciones)}</li>
                     </ul>
+                    <h3>Tareas Realizadas</h3>
+                    <ul>
+                        {(visita.Cloro ? "<li>Regulación de cloro</li>" : "")}
+                        {(visita.Ph ? "<li>Regulación de PH</li>" : "")}
+                        {(visita.Retrolavado ? "<li>Retrolavado y enjuague de filtro</li>" : "")}
+                        {(visita.Canastillos ? "<li>Limpieza de canastillos</li>" : "")}
+                        {(visita.Aspirado ? "<li>Aspirado</li>" : "")}
+                        {(visita.Cepillado ? "<li>Cepillado</li>" : "")}
+                        {(visita.Llaves ? "<li>Devolución de llaves</li>" : "")}
+                        {(visita.Llenando ? "<li>Se deja llenando</li>" : "")}
+                        {(!visita.Cloro && !visita.Ph && !visita.Retrolavado && !visita.Canastillos && !visita.Aspirado && !visita.Cepillado && !visita.Llaves && !visita.Llenando ? "<li><i>No se marcaron tareas específicas</i></li>" : "")}
+                    </ul>
                     <hr/>
                     <p>Adjunto a este correo encontrarás una fotografía del estado de tu piscina al finalizar el trabajo.</p>
                     <p>Gracias por preferir a Piscineros.</p>

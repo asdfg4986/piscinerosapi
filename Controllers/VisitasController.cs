@@ -61,7 +61,15 @@ namespace PiscinerosAPI.Controllers
                     FechaVisita = v.FechaVisita,
                     Estado = (int)v.Estado,
                     Observaciones = v.Observaciones,
-                    FotoUrl = v.FotoUrl
+                    FotoUrl = v.FotoUrl,
+                    Cloro = v.Cloro,
+                    Ph = v.Ph,
+                    Retrolavado = v.Retrolavado,
+                    Canastillos = v.Canastillos,
+                    Aspirado = v.Aspirado,
+                    Cepillado = v.Cepillado,
+                    Llaves = v.Llaves,
+                    Llenando = v.Llenando
                 })
                 .ToListAsync();
 
@@ -105,7 +113,15 @@ namespace PiscinerosAPI.Controllers
                     FechaVisita = v.FechaVisita,
                     Estado = (int)v.Estado,
                     Observaciones = v.Observaciones,
-                    FotoUrl = v.FotoUrl
+                    FotoUrl = v.FotoUrl,
+                    Cloro = v.Cloro,
+                    Ph = v.Ph,
+                    Retrolavado = v.Retrolavado,
+                    Canastillos = v.Canastillos,
+                    Aspirado = v.Aspirado,
+                    Cepillado = v.Cepillado,
+                    Llaves = v.Llaves,
+                    Llenando = v.Llenando
                 })
                 .FirstOrDefaultAsync();
 
@@ -130,7 +146,15 @@ namespace PiscinerosAPI.Controllers
                 FechaVisita = dto.FechaVisita ?? DateTime.Now,
                 Estado = dto.Estado.HasValue ? (EstadoVisita)dto.Estado.Value : EstadoVisita.Programada,
                 Observaciones = dto.Observaciones,
-                FotoUrl = dto.FotoUrl
+                FotoUrl = dto.FotoUrl,
+                Cloro = dto.Cloro ?? false,
+                Ph = dto.Ph ?? false,
+                Retrolavado = dto.Retrolavado ?? false,
+                Canastillos = dto.Canastillos ?? false,
+                Aspirado = dto.Aspirado ?? false,
+                Cepillado = dto.Cepillado ?? false,
+                Llaves = dto.Llaves ?? false,
+                Llenando = dto.Llenando ?? false
             };
 
             _context.Visitas.Add(visita);
@@ -162,6 +186,15 @@ namespace PiscinerosAPI.Controllers
             {
                 visita.FotoUrl = dto.FotoUrl;
             }
+
+            if (dto.Cloro.HasValue) visita.Cloro = dto.Cloro.Value;
+            if (dto.Ph.HasValue) visita.Ph = dto.Ph.Value;
+            if (dto.Retrolavado.HasValue) visita.Retrolavado = dto.Retrolavado.Value;
+            if (dto.Canastillos.HasValue) visita.Canastillos = dto.Canastillos.Value;
+            if (dto.Aspirado.HasValue) visita.Aspirado = dto.Aspirado.Value;
+            if (dto.Cepillado.HasValue) visita.Cepillado = dto.Cepillado.Value;
+            if (dto.Llaves.HasValue) visita.Llaves = dto.Llaves.Value;
+            if (dto.Llenando.HasValue) visita.Llenando = dto.Llenando.Value;
 
             try
             {
@@ -212,6 +245,14 @@ namespace PiscinerosAPI.Controllers
                     v.Estado,
                     v.Observaciones,
                     v.FotoUrl,
+                    v.Cloro,
+                    v.Ph,
+                    v.Retrolavado,
+                    v.Canastillos,
+                    v.Aspirado,
+                    v.Cepillado,
+                    v.Llaves,
+                    v.Llenando,
                     Cliente = new
                     {
                         v.Cliente.Nombre,
