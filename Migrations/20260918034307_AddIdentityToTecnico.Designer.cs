@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PiscinerosAPI.Models;
 
@@ -11,9 +12,11 @@ using PiscinerosAPI.Models;
 namespace PiscinerosAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260918034307_AddIdentityToTecnico")]
+    partial class AddIdentityToTecnico
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -228,9 +231,6 @@ namespace PiscinerosAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("Activo")
-                        .HasColumnType("bit");
-
                     b.Property<string>("Comuna")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -275,9 +275,6 @@ namespace PiscinerosAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("Activo")
-                        .HasColumnType("bit");
-
                     b.Property<string>("Correo")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -313,20 +310,8 @@ namespace PiscinerosAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("Aspirado")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("Canastillos")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("Cepillado")
-                        .HasColumnType("bit");
-
                     b.Property<int>("ClienteId")
                         .HasColumnType("int");
-
-                    b.Property<bool>("Cloro")
-                        .HasColumnType("bit");
 
                     b.Property<int>("Estado")
                         .HasColumnType("int");
@@ -337,20 +322,8 @@ namespace PiscinerosAPI.Migrations
                     b.Property<string>("FotoUrl")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("Llaves")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("Llenando")
-                        .HasColumnType("bit");
-
                     b.Property<string>("Observaciones")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("Ph")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("Retrolavado")
-                        .HasColumnType("bit");
 
                     b.Property<int>("TecnicoId")
                         .HasColumnType("int");
