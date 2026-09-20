@@ -100,9 +100,6 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseCors("AllowAngular");
 
-// Rutas de la API
-app.MapControllers();
-
 // --- INICIO: Creación de Roles y Usuario Maestro ---
 using (var scope = app.Services.CreateScope())
 {
@@ -145,5 +142,8 @@ using (var scope = app.Services.CreateScope())
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Rutas de la API (DEBEN ir después de Autenticación y Autorización)
+app.MapControllers();
 
 app.Run();
