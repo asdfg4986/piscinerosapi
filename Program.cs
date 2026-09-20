@@ -116,6 +116,11 @@ app.UseCors("AllowAngular");
 // --- INICIO: Creación de Roles y Usuario Maestro ---
 using (var scope = app.Services.CreateScope())
 {
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    
+    // Ejecuta las migraciones pendientes automáticamente en la base de datos (ideal para despliegue en Azure)
+    dbContext.Database.Migrate();
+
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>> ();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>> ();
 
