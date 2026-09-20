@@ -33,3 +33,21 @@ Content-Type: application/json
   "telefono": "+56998765432",
   "montoPorVisita": 15000.00
 }
+
+### Modificar un cliente (Asegúrate de que el ID 1 exista)
+PUT {{PiscinerosAPI_HostAddress}}/api/clientes/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "nombre": "Franco Modificado",
+  "direccion": "Avenida Siempre Viva 742",
+  "comuna": "San Bernardo",
+  "telefono": "+56912345678",
+  "visitasPorMes": 8,
+  "diaPreferido": "Sábado",
+  "observaciones": "Se cambió el día y la cantidad de visitas"
+}
+
+### Eliminar un cliente (Por ejemplo, el ID 1)
+DELETE {{PiscinerosAPI_HostAddress}}/api/clientes/1

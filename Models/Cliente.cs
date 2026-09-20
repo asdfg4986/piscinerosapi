@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace PiscinerosAPI.Models
 {
@@ -23,5 +23,7 @@ namespace PiscinerosAPI.Models
         public string DiaPreferido { get; set; } = string.Empty;
 
         public string Observaciones { get; set; } = string.Empty;
+
+        public bool Activo { get; set; } = true;
     }
 }
