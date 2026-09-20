@@ -63,9 +63,22 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
-        policy.AllowAnyOrigin() // Permitir cualquier origen en producción inicial
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        var frontendUrl = builder.Configuration["FrontendUrl"];
+        
+        if (!string.IsNullOrEmpty(frontendUrl))
+        {
+            // En Producción: Permite solo la URL específica de Azure Static Web Apps
+            policy.WithOrigins(frontendUrl)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
+        else
+        {
+            // En Desarrollo: Permite la conexión local de Angular
+            policy.WithOrigins("http://localhost:4200")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
     });
 });
 
