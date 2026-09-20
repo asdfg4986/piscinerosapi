@@ -137,7 +137,7 @@ using (var scope = app.Services.CreateScope())
     // 2. Crear el usuario administrador inicial
     string adminEmail = "franco@piscineros.cl";
     // Leemos la contraseña desde appsettings o variables de entorno (Azure). Si no existe, usamos una segura temporal.
-    string adminPassword = builder.Configuration["AdminPassword"] ?? "Piscineros2026.Seguro!"; 
+    string adminPassword = builder.Configuration["AdminPassword"] ?? "CAMBIAME_EN_PRODUCCION_123!"; 
 
     if (await userManager.FindByEmailAsync(adminEmail) == null)
     {
