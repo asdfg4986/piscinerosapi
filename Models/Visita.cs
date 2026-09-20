@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PiscinerosAPI.Models
@@ -37,5 +37,15 @@ namespace PiscinerosAPI.Models
         public string? Observaciones { get; set; }
 
         public string? FotoUrl { get; set; } // URL de la foto tomada durante la visita
+
+        // Tareas del recibo
+        public bool Cloro { get; set; }
+        public bool Ph { get; set; }
+        public bool Retrolavado { get; set; }
+        public bool Canastillos { get; set; }
+        public bool Aspirado { get; set; }
+        public bool Cepillado { get; set; }
+        public bool Llaves { get; set; }
+        public bool Llenando { get; set; }
     }
 }

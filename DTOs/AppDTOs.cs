@@ -65,6 +65,15 @@ namespace PiscinerosAPI.DTOs
         public int Estado { get; set; }
         public string? Observaciones { get; set; }
         public string? FotoUrl { get; set; }
+
+        public bool Cloro { get; set; }
+        public bool Ph { get; set; }
+        public bool Retrolavado { get; set; }
+        public bool Canastillos { get; set; }
+        public bool Aspirado { get; set; }
+        public bool Cepillado { get; set; }
+        public bool Llaves { get; set; }
+        public bool Llenando { get; set; }
     }
 
     // DTO para cuando se crea/actualiza una Visita (POST/PUT)
@@ -77,5 +86,14 @@ namespace PiscinerosAPI.DTOs
         public int? Estado { get; set; }
         public string? Observaciones { get; set; }
         public string? FotoUrl { get; set; }
+
+        public bool? Cloro { get; set; }
+        public bool? Ph { get; set; }
+        public bool? Retrolavado { get; set; }
+        public bool? Canastillos { get; set; }
+        public bool? Aspirado { get; set; }
+        public bool? Cepillado { get; set; }
+        public bool? Llaves { get; set; }
+        public bool? Llenando { get; set; }
     }
 }
