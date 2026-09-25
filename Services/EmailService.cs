@@ -3,6 +3,7 @@ using MailKit.Security;
 using Microsoft.Extensions.Configuration;
 using MimeKit;
 using PiscinerosAPI.Models;
+using System.Net;
 using System.Net.Http;
 
 namespace PiscinerosAPI.Services
@@ -50,19 +51,24 @@ namespace PiscinerosAPI.Services
             string logoUrl = _configuration["Piscineros:LogoUrl"] ?? "";
             string logoHtml = !string.IsNullOrEmpty(logoUrl) ? $"<img src=\"{logoUrl}\" alt=\"Piscineros Logo\" style=\"max-width: 200px; margin-bottom: 20px;\" /><br/>" : "";
 
+            string nombreSeguro = WebUtility.HtmlEncode(visita.Cliente.Nombre);
+            string direccionSegura = WebUtility.HtmlEncode(visita.Cliente.Direccion);
+            string comunaSegura = WebUtility.HtmlEncode(visita.Cliente.Comuna);
+            string observacionesSeguras = string.IsNullOrWhiteSpace(visita.Observaciones) ? "Sin Observaciones" : WebUtility.HtmlEncode(visita.Observaciones);
+
             // Cuerpo del correo en HTML (Sin el precio/monto según indicaciones)
             builder.HtmlBody = $@"
                 <div style='font-family: Arial, sans-serif; color: #333;'>
                     {logoHtml}
                     <h2>Recibo de Visita Finalizada</h2>
-                    <p>Hola <strong>{visita.Cliente.Nombre}</strong>,</p>
+                    <p>Hola <strong>{nombreSeguro}</strong>,</p>
                     <p>Te informamos que hemos finalizado exitosamente el trabajo en tu piscina.</p>
                     <hr/>
                     <h3>Detalles del Trabajo</h3>
                     <ul>
                         <li><strong>Fecha:</strong> {visita.FechaVisita:dd/MM/yyyy HH:mm}</li>
-                        <li><strong>Dirección:</strong> {visita.Cliente.Direccion}, {visita.Cliente.Comuna}</li>
-                        <li><strong>Observaciones:</strong> {(string.IsNullOrWhiteSpace(visita.Observaciones) ? "Sin Observaciones" : visita.Observaciones)}</li>
+                        <li><strong>Dirección:</strong> {direccionSegura}, {comunaSegura}</li>
+                        <li><strong>Observaciones:</strong> {observacionesSeguras}</li>
                     </ul>
                     <h3>Tareas Realizadas</h3>
                     <ul>

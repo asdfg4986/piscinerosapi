@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using PiscinerosAPI.Services;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +50,28 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+    };
+
+    // Agregar evento para revocar el token en tiempo real si el técnico es desactivado
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = async context =>
+        {
+            var dbContext = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
+
+            // Extraer el claim de TecnicoId
+            var tecnicoIdClaim = context.Principal?.FindFirst("TecnicoId")?.Value;
+            if (!string.IsNullOrEmpty(tecnicoIdClaim) && int.TryParse(tecnicoIdClaim, out int tecnicoId))
+            {
+                // Buscar al técnico en la base de datos para ver si sigue activo
+                var tecnico = await dbContext.Tecnicos.FindAsync(tecnicoId);
+                if (tecnico == null || !tecnico.Activo)
+                {
+                    // Si el técnico fue eliminado o desactivado, invalidamos su token inmediatamente
+                    context.Fail("El técnico ha sido desactivado y su acceso fue revocado.");
+                }
+            }
+        }
     };
 });
 

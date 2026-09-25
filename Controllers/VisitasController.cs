@@ -29,8 +29,21 @@ namespace PiscinerosAPI.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<VisitaResponseDto>>> GetVisitas()
         {
-            var visitas = await _context.Visitas
-                .AsNoTracking()
+            var query = _context.Visitas.AsNoTracking();
+
+            var isAdmin = User.IsInRole("Administrador");
+            if (!isAdmin)
+            {
+                var userTecnicoIdClaim = User.FindFirst("TecnicoId")?.Value;
+                if (userTecnicoIdClaim == null)
+                {
+                    return StatusCode(403, new { mensaje = "Token inválido para técnico." });
+                }
+                int.TryParse(userTecnicoIdClaim, out int miTecnicoId);
+                query = query.Where(v => v.TecnicoId == miTecnicoId);
+            }
+
+            var visitas = await query
                 .Include(v => v.Cliente)
                 .Include(v => v.Tecnico)
                 .Select(v => new VisitaResponseDto
@@ -130,6 +143,16 @@ namespace PiscinerosAPI.Controllers
                 return NotFound();
             }
 
+            var isAdmin = User.IsInRole("Administrador");
+            if (!isAdmin)
+            {
+                var userTecnicoIdClaim = User.FindFirst("TecnicoId")?.Value;
+                if (userTecnicoIdClaim == null || visita.TecnicoId.ToString() != userTecnicoIdClaim)
+                {
+                    return StatusCode(403, new { mensaje = "No tienes permiso para ver esta visita." });
+                }
+            }
+
             return Ok(visita);
         }
 
@@ -175,11 +198,25 @@ namespace PiscinerosAPI.Controllers
             var visita = await _context.Visitas.FindAsync(id);
             if (visita == null) return NotFound();
 
+            var isAdmin = User.IsInRole("Administrador");
+            if (!isAdmin)
+            {
+                var userTecnicoIdClaim = User.FindFirst("TecnicoId")?.Value;
+                if (userTecnicoIdClaim == null || visita.TecnicoId.ToString() != userTecnicoIdClaim)
+                {
+                    return StatusCode(403, new { mensaje = "No tienes permiso para modificar una visita que no te pertenece." });
+                }
+            }
+
             var estadoAnterior = visita.Estado;
 
-            if (dto.ClienteId != null) visita.ClienteId = dto.ClienteId.Value;
-            if (dto.TecnicoId != null) visita.TecnicoId = dto.TecnicoId.Value;
-            if (dto.FechaVisita != null) visita.FechaVisita = dto.FechaVisita.Value;
+            // Bloquear Mass Assignment: Solo el administrador puede reasignar visitas o cambiar fechas
+            if (isAdmin)
+            {
+                if (dto.ClienteId != null) visita.ClienteId = dto.ClienteId.Value;
+                if (dto.TecnicoId != null) visita.TecnicoId = dto.TecnicoId.Value;
+                if (dto.FechaVisita != null) visita.FechaVisita = dto.FechaVisita.Value;
+            }
             if (dto.Estado != null) visita.Estado = (EstadoVisita)dto.Estado.Value;
             if (dto.Observaciones != null) visita.Observaciones = dto.Observaciones;
             if (!string.IsNullOrEmpty(dto.FotoUrl)) 
@@ -225,6 +262,16 @@ namespace PiscinerosAPI.Controllers
         [HttpGet("tecnico/{tecnicoId}/fecha/{fecha}")]
         public async Task<ActionResult<IEnumerable<object>>> GetVisitasPorFecha(int tecnicoId, DateTime fecha)
         {
+            var isAdmin = User.IsInRole("Administrador");
+            if (!isAdmin)
+            {
+                var userTecnicoIdClaim = User.FindFirst("TecnicoId")?.Value;
+                if (userTecnicoIdClaim == null || tecnicoId.ToString() != userTecnicoIdClaim)
+                {
+                    return StatusCode(403, new { mensaje = "No tienes permiso para ver la agenda de otro técnico." });
+                }
+            }
+
             // 1. Establecemos los límites del día (desde las 00:00:00 hasta justo antes del día siguiente)
             var inicioDelDia = fecha.Date;
             var inicioDelDiaSiguiente = inicioDelDia.AddDays(1);
@@ -293,6 +340,16 @@ namespace PiscinerosAPI.Controllers
             var visita = await _context.Visitas.FindAsync(id);
             if (visita == null)
                 return NotFound("Visita no encontrada.");
+
+            var isAdmin = User.IsInRole("Administrador");
+            if (!isAdmin)
+            {
+                var userTecnicoIdClaim = User.FindFirst("TecnicoId")?.Value;
+                if (userTecnicoIdClaim == null || visita.TecnicoId.ToString() != userTecnicoIdClaim)
+                {
+                    return StatusCode(403, new { mensaje = "No tienes permiso para subir fotos a una visita que no te pertenece." });
+                }
+            }
 
             try 
             {
