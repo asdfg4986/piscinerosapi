@@ -11,6 +11,7 @@ namespace PiscinerosAPI.DTOs
         public int VisitasPorMes { get; set; }
         public string DiaPreferido { get; set; } = string.Empty;
         public string Observaciones { get; set; } = string.Empty;
+        public string? NumeroClienteLegacy { get; set; }
         public bool Activo { get; set; }
         public int? TecnicoExternoId { get; set; }
         public string? NombreTecnicoExterno { get; set; }
@@ -27,6 +28,7 @@ namespace PiscinerosAPI.DTOs
         public int? VisitasPorMes { get; set; }
         public string? DiaPreferido { get; set; }
         public string? Observaciones { get; set; }
+        public string? NumeroClienteLegacy { get; set; }
         public bool? Activo { get; set; }
         public int? TecnicoExternoId { get; set; }
     }

@@ -52,6 +52,7 @@ namespace PiscinerosAPI.Controllers
                     DiaPreferido = c.DiaPreferido,
                     Observaciones = c.Observaciones,
                     Activo = c.Activo,
+                    NumeroClienteLegacy = c.NumeroClienteLegacy,
                     TecnicoExternoId = c.TecnicoExternoId,
                     NombreTecnicoExterno = c.TecnicoExterno != null ? c.TecnicoExterno.Nombre : null
                 })
@@ -91,6 +92,7 @@ namespace PiscinerosAPI.Controllers
                     DiaPreferido = c.DiaPreferido,
                     Observaciones = c.Observaciones,
                     Activo = c.Activo,
+                    NumeroClienteLegacy = c.NumeroClienteLegacy,
                     TecnicoExternoId = c.TecnicoExternoId,
                     NombreTecnicoExterno = c.TecnicoExterno != null ? c.TecnicoExterno.Nombre : null
                 })
@@ -109,6 +111,12 @@ namespace PiscinerosAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<ClienteDto>> PostCliente(ClienteRequestDto dto)
         {
+            if (!string.IsNullOrEmpty(dto.NumeroClienteLegacy))
+            {
+                var existe = await _context.Clientes.AnyAsync(c => c.NumeroClienteLegacy == dto.NumeroClienteLegacy);
+                if (existe) return BadRequest(new { mensaje = "El ID Heredado ya está en uso." });
+            }
+
             var cliente = new Cliente
             {
                 Nombre = dto.Nombre ?? "",
@@ -120,6 +128,7 @@ namespace PiscinerosAPI.Controllers
                 DiaPreferido = dto.DiaPreferido ?? "",
                 Observaciones = dto.Observaciones ?? "",
                 Activo = dto.Activo ?? true,
+                NumeroClienteLegacy = dto.NumeroClienteLegacy,
                 TecnicoExternoId = dto.TecnicoExternoId
             };
 
@@ -143,6 +152,12 @@ namespace PiscinerosAPI.Controllers
             var cliente = await _context.Clientes.FindAsync(id);
             if (cliente == null) return NotFound();
 
+            if (!string.IsNullOrEmpty(dto.NumeroClienteLegacy) && dto.NumeroClienteLegacy != cliente.NumeroClienteLegacy)
+            {
+                var existe = await _context.Clientes.AnyAsync(c => c.NumeroClienteLegacy == dto.NumeroClienteLegacy && c.Id != id);
+                if (existe) return BadRequest(new { mensaje = "El ID Heredado ya está en uso por otro cliente." });
+            }
+
             if (dto.Nombre != null) cliente.Nombre = dto.Nombre;
             if (dto.Direccion != null) cliente.Direccion = dto.Direccion;
             if (dto.Comuna != null) cliente.Comuna = dto.Comuna;
@@ -152,6 +167,7 @@ namespace PiscinerosAPI.Controllers
             if (dto.DiaPreferido != null) cliente.DiaPreferido = dto.DiaPreferido;
             if (dto.Observaciones != null) cliente.Observaciones = dto.Observaciones;
             if (dto.Activo != null) cliente.Activo = dto.Activo.Value;
+            if (dto.NumeroClienteLegacy != null) cliente.NumeroClienteLegacy = dto.NumeroClienteLegacy;
             if (dto.TecnicoExternoId != null) cliente.TecnicoExternoId = dto.TecnicoExternoId.Value;
 
             try
