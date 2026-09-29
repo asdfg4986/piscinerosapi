@@ -6,7 +6,7 @@ using PiscinerosAPI.DTOs;
 
 namespace PiscinerosAPI.Controllers
 {
-    [Authorize(Roles = "Administrador")]
+    [Authorize(Roles = "Administrador, Tecnico")]
     [Route("api/[controller]")]
     [ApiController]
     public class TecnicosController : ControllerBase
@@ -21,6 +21,7 @@ namespace PiscinerosAPI.Controllers
         }
 
         // GET: api/tecnicos
+        [Authorize(Roles = "Administrador")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TecnicoDto>>> GetTecnicos()
         {
@@ -34,7 +35,8 @@ namespace PiscinerosAPI.Controllers
                     Telefono = t.Telefono,
                     MontoPorVisita = t.MontoPorVisita,
                     Correo = t.Correo,
-                    Activo = t.Activo
+                    Activo = t.Activo,
+                    EsExterno = t.EsExterno
                 })
                 .ToListAsync();
         }
@@ -43,6 +45,16 @@ namespace PiscinerosAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<TecnicoDto>> GetTecnico(int id)
         {
+            var isAdmin = User.IsInRole("Administrador");
+            if (!isAdmin)
+            {
+                var userTecnicoIdClaim = User.FindFirst("TecnicoId")?.Value;
+                if (userTecnicoIdClaim == null || id.ToString() != userTecnicoIdClaim)
+                {
+                    return StatusCode(403, new { mensaje = "No tienes permiso para ver los datos de este técnico." });
+                }
+            }
+
             var tecnico = await _context.Tecnicos
                 .AsNoTracking()
                 .Where(t => t.Id == id)
@@ -54,7 +66,8 @@ namespace PiscinerosAPI.Controllers
                     Telefono = t.Telefono,
                     MontoPorVisita = t.MontoPorVisita,
                     Correo = t.Correo,
-                    Activo = t.Activo
+                    Activo = t.Activo,
+                    EsExterno = t.EsExterno
                 })
                 .FirstOrDefaultAsync();
 
@@ -67,6 +80,7 @@ namespace PiscinerosAPI.Controllers
         }
 
         // POST: api/tecnicos
+        [Authorize(Roles = "Administrador")]
         [HttpPost]
         public async Task<ActionResult<TecnicoDto>> PostTecnico(TecnicoRequestDto dto)
         {
@@ -100,7 +114,8 @@ namespace PiscinerosAPI.Controllers
                 MontoPorVisita = dto.MontoPorVisita ?? 0,
                 Correo = dto.Correo,
                 IdentityUserId = user.Id,
-                Activo = dto.Activo ?? true
+                Activo = dto.Activo ?? true,
+                EsExterno = dto.EsExterno ?? false
             };
 
             _context.Tecnicos.Add(tecnico);
@@ -110,6 +125,7 @@ namespace PiscinerosAPI.Controllers
         }
 
         // PUT: api/tecnicos/5
+        [Authorize(Roles = "Administrador")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutTecnico(int id, TecnicoRequestDto dto)
         {
@@ -127,6 +143,7 @@ namespace PiscinerosAPI.Controllers
             if (dto.MontoPorVisita != null) tecnico.MontoPorVisita = dto.MontoPorVisita.Value;
             if (dto.Correo != null) tecnico.Correo = dto.Correo;
             if (dto.Activo != null) tecnico.Activo = dto.Activo.Value;
+            if (dto.EsExterno != null) tecnico.EsExterno = dto.EsExterno.Value;
 
             try
             {
@@ -141,6 +158,7 @@ namespace PiscinerosAPI.Controllers
         }
 
         // DELETE: api/tecnicos/5
+        [Authorize(Roles = "Administrador")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTecnico(int id)
         {

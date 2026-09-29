@@ -22,5 +22,7 @@ namespace PiscinerosAPI.Models
         public string? IdentityUserId { get; set; }
 
         public bool Activo { get; set; } = true;
+
+        public bool EsExterno { get; set; } = false;
     }
 }

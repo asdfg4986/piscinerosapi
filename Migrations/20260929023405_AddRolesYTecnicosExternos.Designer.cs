@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PiscinerosAPI.Models;
 
@@ -11,9 +12,11 @@ using PiscinerosAPI.Models;
 namespace PiscinerosAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260929023405_AddRolesYTecnicosExternos")]
+    partial class AddRolesYTecnicosExternos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -251,9 +254,6 @@ namespace PiscinerosAPI.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("NumeroClienteLegacy")
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<string>("Observaciones")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -269,10 +269,6 @@ namespace PiscinerosAPI.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("NumeroClienteLegacy")
-                        .IsUnique()
-                        .HasFilter("[NumeroClienteLegacy] IS NOT NULL");
 
                     b.HasIndex("TecnicoExternoId");
 

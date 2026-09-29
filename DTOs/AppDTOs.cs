@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace PiscinerosAPI.DTOs
 {
     public class ClienteDto
@@ -11,7 +13,10 @@ namespace PiscinerosAPI.DTOs
         public int VisitasPorMes { get; set; }
         public string DiaPreferido { get; set; } = string.Empty;
         public string Observaciones { get; set; } = string.Empty;
+        public string? NumeroClienteLegacy { get; set; }
         public bool Activo { get; set; }
+        public int? TecnicoExternoId { get; set; }
+        public string? NombreTecnicoExterno { get; set; }
     }
 
     public class ClienteRequestDto
@@ -20,12 +25,17 @@ namespace PiscinerosAPI.DTOs
         public string? Nombre { get; set; }
         public string? Direccion { get; set; }
         public string? Comuna { get; set; }
+
+        [RegularExpression(@"^(\+569\d{8})?$", ErrorMessage = "El teléfono debe tener el formato +569XXXXXXXX.")]
         public string? Telefono { get; set; }
+
         public string? Correo { get; set; }
         public int? VisitasPorMes { get; set; }
         public string? DiaPreferido { get; set; }
         public string? Observaciones { get; set; }
+        public string? NumeroClienteLegacy { get; set; }
         public bool? Activo { get; set; }
+        public int? TecnicoExternoId { get; set; }
     }
 
     public class TecnicoDto
@@ -37,6 +47,7 @@ namespace PiscinerosAPI.DTOs
         public decimal MontoPorVisita { get; set; }
         public string Correo { get; set; } = string.Empty;
         public bool Activo { get; set; }
+        public bool EsExterno { get; set; }
     }
 
     public class TecnicoRequestDto
@@ -44,11 +55,15 @@ namespace PiscinerosAPI.DTOs
         public int Id { get; set; }
         public string? Nombre { get; set; }
         public string? RUT { get; set; }
+
+        [RegularExpression(@"^(\+569\d{8})?$", ErrorMessage = "El teléfono debe tener el formato +569XXXXXXXX.")]
         public string? Telefono { get; set; }
+
         public decimal? MontoPorVisita { get; set; }
         public string? Correo { get; set; }
         public string? Password { get; set; }
         public bool? Activo { get; set; }
+        public bool? EsExterno { get; set; }
     }
 
     // DTO para cuando se consulta una Visita (GET)

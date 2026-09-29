@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +17,11 @@ namespace PiscinerosAPI.Models
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Cliente>()
+                .HasIndex(c => c.NumeroClienteLegacy)
+                .IsUnique()
+                .HasFilter("[NumeroClienteLegacy] IS NOT NULL");
         }
     }
 }
