@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace PiscinerosAPI.DTOs
 {
     public class ClienteDto
@@ -23,7 +25,10 @@ namespace PiscinerosAPI.DTOs
         public string? Nombre { get; set; }
         public string? Direccion { get; set; }
         public string? Comuna { get; set; }
+
+        [RegularExpression(@"^(\+569\d{8})?$", ErrorMessage = "El teléfono debe tener el formato +569XXXXXXXX.")]
         public string? Telefono { get; set; }
+
         public string? Correo { get; set; }
         public int? VisitasPorMes { get; set; }
         public string? DiaPreferido { get; set; }
@@ -50,7 +55,10 @@ namespace PiscinerosAPI.DTOs
         public int Id { get; set; }
         public string? Nombre { get; set; }
         public string? RUT { get; set; }
+
+        [RegularExpression(@"^(\+569\d{8})?$", ErrorMessage = "El teléfono debe tener el formato +569XXXXXXXX.")]
         public string? Telefono { get; set; }
+
         public decimal? MontoPorVisita { get; set; }
         public string? Correo { get; set; }
         public string? Password { get; set; }
