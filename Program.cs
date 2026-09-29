@@ -157,25 +157,29 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
-    // 2. Crear el usuario administrador inicial
-    string adminEmail = "franco@piscineros.cl";
+    // 2. Crear los usuarios administradores iniciales
     // Leemos la contraseña desde appsettings o variables de entorno (Azure). Si no existe, usamos una segura temporal.
     string adminPassword = builder.Configuration["AdminPassword"] ?? "CAMBIAME_EN_PRODUCCION_123!"; 
+    
+    string[] adminEmails = { "franco@piscineros.cl", "erwin@piscineros.cl" };
 
-    if (await userManager.FindByEmailAsync(adminEmail) == null)
+    foreach (var email in adminEmails)
     {
-        var adminUser = new IdentityUser
+        if (await userManager.FindByEmailAsync(email) == null)
         {
-            UserName = adminEmail,
-            Email = adminEmail
-        };
+            var adminUser = new IdentityUser
+            {
+                UserName = email,
+                Email = email
+            };
 
-        var result = await userManager.CreateAsync(adminUser, adminPassword);
+            var result = await userManager.CreateAsync(adminUser, adminPassword);
 
-        if (result.Succeeded)
-        {
-            // Le asignamos el rol de Administrador
-            await userManager.AddToRoleAsync(adminUser, "Administrador");
+            if (result.Succeeded)
+            {
+                // Le asignamos el rol de Administrador
+                await userManager.AddToRoleAsync(adminUser, "Administrador");
+            }
         }
     }
 }

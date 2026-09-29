@@ -6,11 +6,13 @@ namespace PiscinerosAPI.Services
     public class AzureBlobImageService : IImageService
     {
         private readonly string _connectionString;
+        private readonly IWebHostEnvironment _env;
 
-        public AzureBlobImageService(IConfiguration configuration)
+        public AzureBlobImageService(IConfiguration configuration, IWebHostEnvironment env)
         {
             _connectionString = configuration.GetConnectionString("AzureStorage") 
                 ?? throw new InvalidOperationException("Falta ConnectionStrings:AzureStorage");
+            _env = env;
         }
 
         public async Task<string> SubirImagenAsync(IFormFile archivo, string carpeta)
@@ -19,9 +21,16 @@ namespace PiscinerosAPI.Services
                 throw new ArgumentException("El archivo está vacío o es nulo.");
 
             // El nombre del contenedor en Azure Storage suele estar en minúsculas y sin espacios
-            // "fotos" es un buen nombre de contenedor.
+            var nombreContenedor = carpeta.ToLower();
+            
+            // Si estamos en el entorno local (Development), usamos un contenedor separado
+            if (_env.IsDevelopment())
+            {
+                nombreContenedor += "-dev";
+            }
+
             var blobServiceClient = new BlobServiceClient(_connectionString);
-            var blobContainerClient = blobServiceClient.GetBlobContainerClient(carpeta.ToLower());
+            var blobContainerClient = blobServiceClient.GetBlobContainerClient(nombreContenedor);
 
             // Crea el contenedor si no existe (con acceso público de lectura para las imágenes)
             await blobContainerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
