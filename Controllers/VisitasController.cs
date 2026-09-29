@@ -320,6 +320,28 @@ namespace PiscinerosAPI.Controllers
         [HttpGet("cliente/{clienteId}")]
         public async Task<ActionResult<IEnumerable<Visita>>> GetVisitasPorCliente(int clienteId)
         {
+            var isAdmin = User.IsInRole("Administrador");
+            if (!isAdmin)
+            {
+                var identityUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var tecnico = await _context.Tecnicos.FirstOrDefaultAsync(t => t.IdentityUserId == identityUserId);
+                
+                if (tecnico == null) return Forbid();
+
+                if (tecnico.EsExterno)
+                {
+                    var cliente = await _context.Clientes.FindAsync(clienteId);
+                    if (cliente == null || cliente.TecnicoExternoId != tecnico.Id)
+                    {
+                        return StatusCode(403, new { mensaje = "No tienes permiso para ver las visitas de este cliente." });
+                    }
+                }
+                else
+                {
+                    return StatusCode(403, new { mensaje = "Técnicos internos no pueden ver el historial completo de un cliente." });
+                }
+            }
+
             // Buscamos en la tabla Visitas todas las que coincidan con el ClienteId
             var visitas = await _context.Visitas
                                         .AsNoTracking()

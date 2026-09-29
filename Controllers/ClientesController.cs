@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PiscinerosAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using PiscinerosAPI.DTOs;
+using System.Security.Claims;
 
 namespace PiscinerosAPI.Controllers
 {
@@ -18,13 +19,27 @@ namespace PiscinerosAPI.Controllers
             _context = context;
         }
 
-        // GET: api/tecnicos
+        // GET: api/clientes
         [Authorize(Roles = "Administrador, Tecnico")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ClienteDto>>> GetClientes()
         {
-            return await _context.Clientes
-                .AsNoTracking()
+            var query = _context.Clientes.Include(c => c.TecnicoExterno).AsNoTracking();
+
+            if (User.IsInRole("Tecnico"))
+            {
+                var identityUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var tecnico = await _context.Tecnicos.FirstOrDefaultAsync(t => t.IdentityUserId == identityUserId);
+
+                if (tecnico == null || !tecnico.EsExterno)
+                {
+                    return Forbid();
+                }
+
+                query = query.Where(c => c.TecnicoExternoId == tecnico.Id);
+            }
+
+            return await query
                 .Select(c => new ClienteDto
                 {
                     Id = c.Id,
@@ -36,19 +51,34 @@ namespace PiscinerosAPI.Controllers
                     VisitasPorMes = c.VisitasPorMes,
                     DiaPreferido = c.DiaPreferido,
                     Observaciones = c.Observaciones,
-                    Activo = c.Activo
+                    Activo = c.Activo,
+                    TecnicoExternoId = c.TecnicoExternoId,
+                    NombreTecnicoExterno = c.TecnicoExterno != null ? c.TecnicoExterno.Nombre : null
                 })
                 .ToListAsync();
         }
 
-        // GET: api/tecnicos/5
+        // GET: api/clientes/5
         [Authorize(Roles = "Administrador, Tecnico")]
         [HttpGet("{id}")]
         public async Task<ActionResult<ClienteDto>> GetCliente(int id)
         {
-            var cliente = await _context.Clientes
-                .AsNoTracking()
-                .Where(c => c.Id == id)
+            var query = _context.Clientes.Include(c => c.TecnicoExterno).AsNoTracking().Where(c => c.Id == id);
+
+            if (User.IsInRole("Tecnico"))
+            {
+                var identityUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var tecnico = await _context.Tecnicos.FirstOrDefaultAsync(t => t.IdentityUserId == identityUserId);
+
+                if (tecnico == null || !tecnico.EsExterno)
+                {
+                    return Forbid();
+                }
+
+                query = query.Where(c => c.TecnicoExternoId == tecnico.Id);
+            }
+
+            var cliente = await query
                 .Select(c => new ClienteDto
                 {
                     Id = c.Id,
@@ -60,7 +90,9 @@ namespace PiscinerosAPI.Controllers
                     VisitasPorMes = c.VisitasPorMes,
                     DiaPreferido = c.DiaPreferido,
                     Observaciones = c.Observaciones,
-                    Activo = c.Activo
+                    Activo = c.Activo,
+                    TecnicoExternoId = c.TecnicoExternoId,
+                    NombreTecnicoExterno = c.TecnicoExterno != null ? c.TecnicoExterno.Nombre : null
                 })
                 .FirstOrDefaultAsync();
 
@@ -87,7 +119,8 @@ namespace PiscinerosAPI.Controllers
                 VisitasPorMes = dto.VisitasPorMes ?? 0,
                 DiaPreferido = dto.DiaPreferido ?? "",
                 Observaciones = dto.Observaciones ?? "",
-                Activo = dto.Activo ?? true
+                Activo = dto.Activo ?? true,
+                TecnicoExternoId = dto.TecnicoExternoId
             };
 
             _context.Clientes.Add(cliente);
@@ -119,6 +152,7 @@ namespace PiscinerosAPI.Controllers
             if (dto.DiaPreferido != null) cliente.DiaPreferido = dto.DiaPreferido;
             if (dto.Observaciones != null) cliente.Observaciones = dto.Observaciones;
             if (dto.Activo != null) cliente.Activo = dto.Activo.Value;
+            if (dto.TecnicoExternoId != null) cliente.TecnicoExternoId = dto.TecnicoExternoId.Value;
 
             try
             {

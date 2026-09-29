@@ -25,5 +25,8 @@ namespace PiscinerosAPI.Models
         public string Observaciones { get; set; } = string.Empty;
 
         public bool Activo { get; set; } = true;
+
+        public int? TecnicoExternoId { get; set; }
+        public Tecnico? TecnicoExterno { get; set; }
     }
 }
