@@ -27,7 +27,11 @@ namespace PiscinerosAPI.Controllers
 
         // GET: api/Visitas
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<VisitaResponseDto>>> GetVisitas()
+        public async Task<ActionResult<PaginatedResponseDto<VisitaResponseDto>>> GetVisitas(
+            [FromQuery] int page = 1, 
+            [FromQuery] int pageSize = 10,
+            [FromQuery] DateTime? fechaInicio = null,
+            [FromQuery] DateTime? fechaFin = null)
         {
             var query = _context.Visitas.AsNoTracking();
 
@@ -43,9 +47,27 @@ namespace PiscinerosAPI.Controllers
                 query = query.Where(v => v.TecnicoId == miTecnicoId);
             }
 
+            if (fechaInicio.HasValue)
+            {
+                query = query.Where(v => v.FechaVisita >= fechaInicio.Value.Date);
+            }
+            if (fechaFin.HasValue)
+            {
+                // Incluir todo el día hasta las 23:59:59
+                var finDia = fechaFin.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(v => v.FechaVisita <= finDia);
+            }
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            // Ordenamos por fecha descendente y aplicamos paginación
             var visitas = await query
                 .Include(v => v.Cliente)
                 .Include(v => v.Tecnico)
+                .OrderByDescending(v => v.FechaVisita)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(v => new VisitaResponseDto
                 {
                     Id = v.Id,
@@ -87,7 +109,16 @@ namespace PiscinerosAPI.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(visitas);
+            var response = new PaginatedResponseDto<VisitaResponseDto>
+            {
+                Items = visitas,
+                TotalCount = totalCount,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalPages = totalPages
+            };
+
+            return Ok(response);
         }
 
         // GET: api/Visitas/5
