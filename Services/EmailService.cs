@@ -103,6 +103,20 @@ namespace PiscinerosAPI.Services
                 }
             }
 
+            // Descargar y adjuntar la firma si existe
+            if (!string.IsNullOrEmpty(visita.FirmaClienteUrl))
+            {
+                try
+                {
+                    var firmaBytes = await _httpClient.GetByteArrayAsync(visita.FirmaClienteUrl);
+                    builder.Attachments.Add("Firma_Cliente.png", firmaBytes, ContentType.Parse("image/png"));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error al descargar la firma para adjuntar: {ex.Message}");
+                }
+            }
+
             emailMessage.Body = builder.ToMessageBody();
 
             // Enviar el correo usando SMTP

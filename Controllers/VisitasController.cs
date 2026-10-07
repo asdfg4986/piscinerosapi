@@ -75,6 +75,7 @@ namespace PiscinerosAPI.Controllers
                     Estado = (int)v.Estado,
                     Observaciones = v.Observaciones,
                     FotoUrl = v.FotoUrl,
+                    FirmaClienteUrl = v.FirmaClienteUrl,
                     Cloro = v.Cloro,
                     Ph = v.Ph,
                     Retrolavado = v.Retrolavado,
@@ -127,6 +128,7 @@ namespace PiscinerosAPI.Controllers
                     Estado = (int)v.Estado,
                     Observaciones = v.Observaciones,
                     FotoUrl = v.FotoUrl,
+                    FirmaClienteUrl = v.FirmaClienteUrl,
                     Cloro = v.Cloro,
                     Ph = v.Ph,
                     Retrolavado = v.Retrolavado,
@@ -170,6 +172,7 @@ namespace PiscinerosAPI.Controllers
                 Estado = dto.Estado.HasValue ? (EstadoVisita)dto.Estado.Value : EstadoVisita.Programada,
                 Observaciones = dto.Observaciones,
                 FotoUrl = dto.FotoUrl,
+                FirmaClienteUrl = dto.FirmaClienteUrl,
                 Cloro = dto.Cloro ?? false,
                 Ph = dto.Ph ?? false,
                 Retrolavado = dto.Retrolavado ?? false,
@@ -222,6 +225,10 @@ namespace PiscinerosAPI.Controllers
             if (!string.IsNullOrEmpty(dto.FotoUrl)) 
             {
                 visita.FotoUrl = dto.FotoUrl;
+            }
+            if (!string.IsNullOrEmpty(dto.FirmaClienteUrl)) 
+            {
+                visita.FirmaClienteUrl = dto.FirmaClienteUrl;
             }
 
             if (dto.Cloro.HasValue) visita.Cloro = dto.Cloro.Value;
@@ -292,6 +299,7 @@ namespace PiscinerosAPI.Controllers
                     v.Estado,
                     v.Observaciones,
                     v.FotoUrl,
+                    v.FirmaClienteUrl,
                     v.Cloro,
                     v.Ph,
                     v.Retrolavado,
@@ -391,6 +399,46 @@ namespace PiscinerosAPI.Controllers
             catch (Exception ex)
             {
                 // Devolvemos el error real para poder diagnosticarlo en el frontend
+                return StatusCode(500, new { mensaje = "Error interno del servidor", detalle = ex.Message });
+            }
+        }
+
+        // POST: api/Visitas/5/firma
+        // Permite subir la firma del cliente asociada a una visita. Se guarda en el contenedor "firmas".
+        [HttpPost("{id}/firma")]
+        public async Task<ActionResult<object>> SubirFirmaVisita(int id, IFormFile firma)
+        {
+            var visita = await _context.Visitas.FindAsync(id);
+            if (visita == null)
+                return NotFound("Visita no encontrada.");
+
+            var isAdmin = User.IsInRole("Administrador");
+            if (!isAdmin)
+            {
+                var userTecnicoIdClaim = User.FindFirst("TecnicoId")?.Value;
+                if (userTecnicoIdClaim == null || visita.TecnicoId.ToString() != userTecnicoIdClaim)
+                {
+                    return StatusCode(403, new { mensaje = "No tienes permiso para subir una firma a una visita que no te pertenece." });
+                }
+            }
+
+            try 
+            {
+                // Guardar en el contenedor "firmas" (y "firmas-dev" localmente por el ImageService)
+                var firmaUrl = await _imageService.SubirImagenAsync(firma, "firmas");
+
+                // Guardar en la BD
+                visita.FirmaClienteUrl = firmaUrl;
+                await _context.SaveChangesAsync();
+
+                return Ok(new { mensaje = "Firma subida con éxito", url = visita.FirmaClienteUrl });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
                 return StatusCode(500, new { mensaje = "Error interno del servidor", detalle = ex.Message });
             }
         }

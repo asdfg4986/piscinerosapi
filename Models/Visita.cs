@@ -37,6 +37,7 @@ namespace PiscinerosAPI.Models
         public string? Observaciones { get; set; }
 
         public string? FotoUrl { get; set; } // URL de la foto tomada durante la visita
+        public string? FirmaClienteUrl { get; set; } // URL de la firma opcional del cliente
 
         // Tareas del recibo
         public bool Cloro { get; set; }
