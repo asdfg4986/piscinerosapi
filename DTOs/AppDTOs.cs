@@ -80,6 +80,7 @@ namespace PiscinerosAPI.DTOs
         public int Estado { get; set; }
         public string? Observaciones { get; set; }
         public string? FotoUrl { get; set; }
+        public string? FirmaClienteUrl { get; set; }
 
         public bool Cloro { get; set; }
         public bool Ph { get; set; }
@@ -101,6 +102,7 @@ namespace PiscinerosAPI.DTOs
         public int? Estado { get; set; }
         public string? Observaciones { get; set; }
         public string? FotoUrl { get; set; }
+        public string? FirmaClienteUrl { get; set; }
 
         public bool? Cloro { get; set; }
         public bool? Ph { get; set; }

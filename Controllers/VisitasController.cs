@@ -27,7 +27,11 @@ namespace PiscinerosAPI.Controllers
 
         // GET: api/Visitas
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<VisitaResponseDto>>> GetVisitas()
+        public async Task<ActionResult<PaginatedResponseDto<VisitaResponseDto>>> GetVisitas(
+            [FromQuery] int page = 1, 
+            [FromQuery] int pageSize = 10,
+            [FromQuery] DateTime? fechaInicio = null,
+            [FromQuery] DateTime? fechaFin = null)
         {
             var query = _context.Visitas.AsNoTracking();
 
@@ -43,9 +47,27 @@ namespace PiscinerosAPI.Controllers
                 query = query.Where(v => v.TecnicoId == miTecnicoId);
             }
 
+            if (fechaInicio.HasValue)
+            {
+                query = query.Where(v => v.FechaVisita >= fechaInicio.Value.Date);
+            }
+            if (fechaFin.HasValue)
+            {
+                // Incluir todo el día hasta las 23:59:59
+                var finDia = fechaFin.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(v => v.FechaVisita <= finDia);
+            }
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            // Ordenamos por fecha descendente y aplicamos paginación
             var visitas = await query
                 .Include(v => v.Cliente)
                 .Include(v => v.Tecnico)
+                .OrderByDescending(v => v.FechaVisita)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(v => new VisitaResponseDto
                 {
                     Id = v.Id,
@@ -75,6 +97,7 @@ namespace PiscinerosAPI.Controllers
                     Estado = (int)v.Estado,
                     Observaciones = v.Observaciones,
                     FotoUrl = v.FotoUrl,
+                    FirmaClienteUrl = v.FirmaClienteUrl,
                     Cloro = v.Cloro,
                     Ph = v.Ph,
                     Retrolavado = v.Retrolavado,
@@ -86,7 +109,16 @@ namespace PiscinerosAPI.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(visitas);
+            var response = new PaginatedResponseDto<VisitaResponseDto>
+            {
+                Items = visitas,
+                TotalCount = totalCount,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalPages = totalPages
+            };
+
+            return Ok(response);
         }
 
         // GET: api/Visitas/5
@@ -127,6 +159,7 @@ namespace PiscinerosAPI.Controllers
                     Estado = (int)v.Estado,
                     Observaciones = v.Observaciones,
                     FotoUrl = v.FotoUrl,
+                    FirmaClienteUrl = v.FirmaClienteUrl,
                     Cloro = v.Cloro,
                     Ph = v.Ph,
                     Retrolavado = v.Retrolavado,
@@ -170,6 +203,7 @@ namespace PiscinerosAPI.Controllers
                 Estado = dto.Estado.HasValue ? (EstadoVisita)dto.Estado.Value : EstadoVisita.Programada,
                 Observaciones = dto.Observaciones,
                 FotoUrl = dto.FotoUrl,
+                FirmaClienteUrl = dto.FirmaClienteUrl,
                 Cloro = dto.Cloro ?? false,
                 Ph = dto.Ph ?? false,
                 Retrolavado = dto.Retrolavado ?? false,
@@ -222,6 +256,10 @@ namespace PiscinerosAPI.Controllers
             if (!string.IsNullOrEmpty(dto.FotoUrl)) 
             {
                 visita.FotoUrl = dto.FotoUrl;
+            }
+            if (!string.IsNullOrEmpty(dto.FirmaClienteUrl)) 
+            {
+                visita.FirmaClienteUrl = dto.FirmaClienteUrl;
             }
 
             if (dto.Cloro.HasValue) visita.Cloro = dto.Cloro.Value;
@@ -292,6 +330,7 @@ namespace PiscinerosAPI.Controllers
                     v.Estado,
                     v.Observaciones,
                     v.FotoUrl,
+                    v.FirmaClienteUrl,
                     v.Cloro,
                     v.Ph,
                     v.Retrolavado,
@@ -391,6 +430,46 @@ namespace PiscinerosAPI.Controllers
             catch (Exception ex)
             {
                 // Devolvemos el error real para poder diagnosticarlo en el frontend
+                return StatusCode(500, new { mensaje = "Error interno del servidor", detalle = ex.Message });
+            }
+        }
+
+        // POST: api/Visitas/5/firma
+        // Permite subir la firma del cliente asociada a una visita. Se guarda en el contenedor "firmas".
+        [HttpPost("{id}/firma")]
+        public async Task<ActionResult<object>> SubirFirmaVisita(int id, IFormFile firma)
+        {
+            var visita = await _context.Visitas.FindAsync(id);
+            if (visita == null)
+                return NotFound("Visita no encontrada.");
+
+            var isAdmin = User.IsInRole("Administrador");
+            if (!isAdmin)
+            {
+                var userTecnicoIdClaim = User.FindFirst("TecnicoId")?.Value;
+                if (userTecnicoIdClaim == null || visita.TecnicoId.ToString() != userTecnicoIdClaim)
+                {
+                    return StatusCode(403, new { mensaje = "No tienes permiso para subir una firma a una visita que no te pertenece." });
+                }
+            }
+
+            try 
+            {
+                // Guardar en el contenedor "firmas" (y "firmas-dev" localmente por el ImageService)
+                var firmaUrl = await _imageService.SubirImagenAsync(firma, "firmas");
+
+                // Guardar en la BD
+                visita.FirmaClienteUrl = firmaUrl;
+                await _context.SaveChangesAsync();
+
+                return Ok(new { mensaje = "Firma subida con éxito", url = visita.FirmaClienteUrl });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
                 return StatusCode(500, new { mensaje = "Error interno del servidor", detalle = ex.Message });
             }
         }
