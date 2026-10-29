@@ -5,6 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using PiscinerosAPI.DTOs;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace PiscinerosAPI.Controllers
 {
@@ -24,6 +25,7 @@ namespace PiscinerosAPI.Controllers
             _context = context;
         }
 
+        [EnableRateLimiting("login-policy")]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto model)
         {
