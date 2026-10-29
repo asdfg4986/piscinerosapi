@@ -7,6 +7,9 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using PiscinerosAPI.Services;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -107,9 +110,49 @@ builder.Services.AddCors(options =>
 
 // 1. ESTO REEMPLAZA A "AddOpenApi()" EN .NET 8
 builder.Services.AddEndpointsApiExplorer();
+// Configuración de ForwardedHeaders para leer la IP real del cliente detrás del proxy de Azure App Service
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// Configuración de Rate Limiting (Protección contra Fuerza Bruta)
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Política para Login: máximo 5 intentos por minuto por IP
+    options.AddPolicy("login-policy", httpContext =>
+    {
+        var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: clientIp,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsync(
+            System.Text.Json.JsonSerializer.Serialize(new
+            {
+                mensaje = "Demasiados intentos de inicio de sesión. Por favor, espera un minuto antes de volver a intentar."
+            }), cancellationToken: token);
+    };
+});
+
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 // 2. ESTO REEMPLAZA A "MapOpenApi()" Y DIBUJA LA INTERFAZ GRÁFICA
 if (app.Environment.IsDevelopment())
@@ -185,6 +228,7 @@ using (var scope = app.Services.CreateScope())
 }
 // --- FIN: Creación de Roles y Usuario Maestro ---
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
